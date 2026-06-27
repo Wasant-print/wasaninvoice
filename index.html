@@ -371,14 +371,20 @@ window.onload=()=>{
 function autoNum(){const t=new Date(),yy=String(t.getFullYear()-543).slice(-2),mm=String(t.getMonth()+1).padStart(2,'0');document.getElementById('f-num').value=docType+yy+mm+'001';}
 
 /* ── API CALL ── */
-async function apiGet(action){
-  const res=await fetch(`${API_URL}?action=${action}`);
+async function apiGet(action,params={}){
+  const qs=new URLSearchParams({action,...params}).toString();const res=await fetch(`${API_URL}?${qs}`);
   const data=await res.json();
   if(!data.ok)throw new Error(data.error||'API Error');
   return data.data;
 }
 async function apiPost(action,payload){
-  const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})});
+  // ส่งผ่าน GET เพื่อหลีกเลี่ยง CORS preflight
+  const params={action};
+  Object.keys(payload).forEach(k=>{
+    params[k]=typeof payload[k]==='object'?JSON.stringify(payload[k]):payload[k];
+  });
+  const qs=new URLSearchParams(params).toString();
+  const res=await fetch(`${API_URL}?${qs}`);
   const data=await res.json();
   if(!data.ok)throw new Error(data.error||'API Error');
   return data.data;
