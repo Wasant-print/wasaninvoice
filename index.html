@@ -1077,16 +1077,15 @@ async function doLogin() {
   if (!u || !p) return;
   showLoading(true);
   try {
-    const users = await sheetsGet(CONFIG.SHEET_USERS);
-    const found = users.find(r => r.username === u && r.password === p);
-    if (!found) {
+    const params = new URLSearchParams({ action: 'login', username: u, password: p });
+    const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    const res = await r.json();
+    if (!res.success) {
       document.getElementById('login-error').style.display = 'block';
       showLoading(false); return;
     }
-    STATE.currentUser = { username: u, name: found.name || u, role: found.role };
+    STATE.currentUser = { username: u, name: res.name || u, role: res.role };
     sessionStorage.setItem('vp_user', JSON.stringify(STATE.currentUser));
-    // Log login
-    await sheetsPost('appendLog', { username: u, action: 'LOGIN', timestamp: new Date().toISOString() });
     enterApp();
   } catch(e) {
     showLoading(false);
