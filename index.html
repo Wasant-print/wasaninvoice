@@ -956,7 +956,7 @@ const CONFIG = {
   API_KEY:  'YOUR_GOOGLE_SHEETS_API_KEY_HERE',
   // Google Apps Script Web App URL (สำหรับ write operations)
   // สร้าง Apps Script แยกต่างหากที่รับ POST และ write ลง Sheets
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzVbFmcob9P6pGpwnSwAFtvZlVXh9cSSTcvRAEIFp7BLmkokNRy43IQt6RntHhnG9s/exec',
+  APPS_SCRIPT_URL: 'AKfycbztY0sjv2HCqjs_slg3QqZoOzRviGPwNpGwJgGzSMX_-Pg9bcQTSRhH9N_1AmO4BD3x/exec',
   SHEET_DOCS:   'ฐานข้อมูลเอกสาร',
   SHEET_ITEMS:  'ฐานข้อมูลรายการ',
   SHEET_USERS:  'users',
@@ -1008,36 +1008,35 @@ window.onload = () => {
 // GOOGLE SHEETS API
 // ════════════════════════════════════════════════
 async function sheetsGet(sheetName) {
-  if (CONFIG.SHEET_ID === 'YOUR_GOOGLE_SHEET_ID_HERE') {
+  if (CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
     return getMockData(sheetName);
   }
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${CONFIG.API_KEY}`;
-    const r = await fetch(url);
+    const params = new URLSearchParams({ action: 'getSheet', sheet: sheetName });
+    const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await r.json();
-    if (!data.values || data.values.length < 2) return [];
-    const headers = data.values[0];
-    return data.values.slice(1).map(row => {
+    if (!data.success || !data.data || data.data.length < 2) return [];
+    const headers = data.data[0];
+    return data.data.slice(1).map(row => {
       const obj = {};
       headers.forEach((h,i) => { obj[h] = row[i] || ''; });
       return obj;
     });
   } catch(e) {
-    showToast('ไม่สามารถเชื่อมต่อ Google Sheets ได้', 'error');
+    showToast('ไม่สามารถเชื่อมต่อได้', 'error');
     return getMockData(sheetName);
   }
 }
 
 async function sheetsPost(action, payload) {
   if (CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
-    // Demo mode — simulate
     return { success: true };
   }
-  const r = await fetch(CONFIG.APPS_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action, ...payload }),
-    headers: { 'Content-Type': 'application/json' },
+  const params = new URLSearchParams({ action });
+  Object.keys(payload).forEach(k => {
+    params.append(k, typeof payload[k] === 'object' ? JSON.stringify(payload[k]) : payload[k]);
   });
+  const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
   return r.json();
 }
 
