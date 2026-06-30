@@ -360,7 +360,7 @@
     box-shadow: var(--shadow-md);
   }
   .doc-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-  .doc-logo-area { width: 160px; height: 90px; border: 1.5px dashed #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 11px; overflow: hidden; }
+  .doc-logo-area { width: 120px; height: 70px; border: 1.5px dashed #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 11px; overflow: hidden; }
   .doc-logo-area img { width: 100%; height: 100%; object-fit: contain; }
   .doc-title { font-size: 22px; font-weight: 700; color: #1565c0; text-align: right; }
   .doc-meta { text-align: right; font-size: 12px; line-height: 1.8; }
@@ -450,7 +450,34 @@
     font-family: monospace; font-size: 12px;
   }
 
-  @media print {
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100%; height: auto; position: relative;
+      flex-direction: row; flex-wrap: wrap; padding: 8px 12px;
+    }
+    .sidebar-brand { padding: 8px 0; border: none; display: flex; align-items: center; gap: 10px; }
+    .sidebar-brand .s-logo { margin: 0; width: 32px; height: 32px; }
+    .sidebar-brand h2 { font-size: 13px; }
+    .sidebar-brand p { display: none; }
+    .sidebar-nav { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; padding: 4px 0; width: 100%; }
+    .nav-section-label { display: none; }
+    .nav-item { padding: 6px 10px; font-size: 11px; border-radius: 6px; }
+    .sidebar-footer { width: 100%; padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 8px; }
+    .user-info { margin-bottom: 0; }
+    .btn-logout { width: auto; padding: 6px 12px; }
+    .main { margin-left: 0; padding: 12px 14px; }
+    .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-row.cols-3 { grid-template-columns: 1fr; }
+    .modal { width: 95vw !important; }
+    .settings-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .sidebar-nav { overflow-x: auto; flex-wrap: nowrap; }
+  }
     body * { visibility: hidden; }
     .doc-sheet, .doc-sheet * { visibility: visible; }
     .doc-sheet { position: fixed; left: 0; top: 0; margin: 0; box-shadow: none; }
@@ -956,7 +983,7 @@ const CONFIG = {
   API_KEY:  'YOUR_GOOGLE_SHEETS_API_KEY_HERE',
   // Google Apps Script Web App URL (สำหรับ write operations)
   // สร้าง Apps Script แยกต่างหากที่รับ POST และ write ลง Sheets
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyqdr10feAE5QEKWsoDsFT-EvvsMXZkItZ650yaK9KqNVEoGHEA0vC_PgP7dka1YeHq/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwlYBrx2WIQfE9DQKA6KO0PuuQJhMb9wYU4JMnW8bkuNvh-yGhZRuEdZ8ptzxeypv3o/exec',
   SHEET_DOCS:   'ฐานข้อมูลเอกสาร',
   SHEET_ITEMS:  'ฐานข้อมูลรายการ',
   SHEET_USERS:  'users',
@@ -1097,6 +1124,9 @@ async function doLogin() {
 function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  // ซ่อน config banner เพราะตั้งค่าแล้ว
+  const banner = document.getElementById('config-banner');
+  if (banner) banner.style.display = 'none';
   const user = STATE.currentUser;
   document.getElementById('sidebar-username').textContent = user.name || user.username;
   document.getElementById('sidebar-role').textContent = user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่';
@@ -1775,7 +1805,8 @@ function renderLogsTable() {
 // ════════════════════════════════════════════════
 // SETTINGS / UPLOAD
 // ════════════════════════════════════════════════
-function loadSettings() {
+async function loadSettings() {
+  // โหลดข้อมูลบริษัทจาก localStorage ก่อน
   const saved = localStorage.getItem('vp_settings');
   STATE.settings = saved ? JSON.parse(saved) : {
     company: 'บริษัท วสันต์ปริ้นเตอร์ แอนด์ เซอร์วิส จำกัด',
@@ -1787,9 +1818,23 @@ function loadSettings() {
   // Apply to form fields
   const fields = ['company','taxid','addr1','addr2','tel','email','bank','acc','accname','branch'];
   fields.forEach(f => { const el = document.getElementById('s-'+f); if(el) el.value = STATE.settings[f]||''; });
-  // Apply logo/sig previews
-  if (STATE.settings.logo) showUploadPreview('logo', STATE.settings.logo);
-  if (STATE.settings.sig)  showUploadPreview('sig',  STATE.settings.sig);
+
+  // โหลดโลโก้และลายเซ็นจาก Google Sheets (ถาวรทุกอุปกรณ์)
+  try {
+    const params = new URLSearchParams({ action: 'getSheet', sheet: 'ตั้งค่าระบบ' });
+    const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    const data = await r.json();
+    if (data.success && data.data && data.data.length > 1) {
+      data.data.slice(1).forEach(row => {
+        if (row[0] === 'logo' && row[1]) { STATE.settings.logo = row[1]; showUploadPreview('logo', row[1]); }
+        if (row[0] === 'sig'  && row[1]) { STATE.settings.sig  = row[1]; showUploadPreview('sig',  row[1]); }
+      });
+    }
+  } catch(e) {
+    // fallback: ใช้จาก localStorage
+    if (STATE.settings.logo) showUploadPreview('logo', STATE.settings.logo);
+    if (STATE.settings.sig)  showUploadPreview('sig',  STATE.settings.sig);
+  }
 }
 
 function saveSettings() {
@@ -1799,14 +1844,23 @@ function saveSettings() {
   showToast('บันทึกการตั้งค่าแล้ว ✓', 'success');
 }
 
+async function saveLogoSigToSheets(type, value) {
+  try {
+    const params = new URLSearchParams({ action: 'saveSetting', key: type, value });
+    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+  } catch(e) {}
+}
+
 function handleUpload(event, type) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     STATE.settings[type] = e.target.result;
     localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
     showUploadPreview(type, e.target.result);
+    showToast(`⏳ กำลังบันทึก${type==='logo'?'โลโก้':'ลายเซ็น'}...`);
+    await saveLogoSigToSheets(type, e.target.result);
     showToast(`อัพโหลด${type==='logo'?'โลโก้':'ลายเซ็น'}สำเร็จ ✓`, 'success');
   };
   reader.readAsDataURL(file);
@@ -1817,10 +1871,12 @@ function handleDrop(event, type) {
   const file = event.dataTransfer.files[0];
   if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     STATE.settings[type] = e.target.result;
     localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
     showUploadPreview(type, e.target.result);
+    showToast(`⏳ กำลังบันทึก${type==='logo'?'โลโก้':'ลายเซ็น'}...`);
+    await saveLogoSigToSheets(type, e.target.result);
     showToast(`อัพโหลด${type==='logo'?'โลโก้':'ลายเซ็น'}สำเร็จ ✓`, 'success');
   };
   reader.readAsDataURL(file);
