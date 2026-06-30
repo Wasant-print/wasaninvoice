@@ -478,6 +478,7 @@
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .sidebar-nav { overflow-x: auto; flex-wrap: nowrap; }
   }
+  @media print {
     body * { visibility: hidden; }
     .doc-sheet, .doc-sheet * { visibility: visible; }
     .doc-sheet { position: fixed; left: 0; top: 0; margin: 0; box-shadow: none; }
