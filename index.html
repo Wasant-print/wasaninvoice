@@ -1052,7 +1052,7 @@ const CONFIG = {
   API_KEY:  'YOUR_GOOGLE_SHEETS_API_KEY_HERE',
   // Google Apps Script Web App URL (สำหรับ write operations)
   // สร้าง Apps Script แยกต่างหากที่รับ POST และ write ลง Sheets
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwlYBrx2WIQfE9DQKA6KO0PuuQJhMb9wYU4JMnW8bkuNvh-yGhZRuEdZ8ptzxeypv3o/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxsGDyW49ONLwmI8u9Rw4T0-TKfqvzOMoXeCAl5J6dv3NJyHGvPFaxSkCIHLPwM7cgk/exec',
   SHEET_DOCS:   'ฐานข้อมูลเอกสาร',
   SHEET_ITEMS:  'ฐานข้อมูลรายการ',
   SHEET_USERS:  'users',
@@ -1898,7 +1898,7 @@ async function loadSettings() {
 
   // โหลดโลโก้และลายเซ็นจาก Google Sheets (ถาวรทุกอุปกรณ์)
   try {
-    const params = new URLSearchParams({ action: 'getSheet', sheet: 'ตั้งค่าระบบ' });
+    const params = new URLSearchParams({ action: 'getSheet', sheet: 'ระบบ' });
     const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await r.json();
     if (data.success && data.data && data.data.length > 1) {
