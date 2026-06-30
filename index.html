@@ -1052,7 +1052,7 @@ const CONFIG = {
   API_KEY:  'YOUR_GOOGLE_SHEETS_API_KEY_HERE',
   // Google Apps Script Web App URL (สำหรับ write operations)
   // สร้าง Apps Script แยกต่างหากที่รับ POST และ write ลง Sheets
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxsGDyW49ONLwmI8u9Rw4T0-TKfqvzOMoXeCAl5J6dv3NJyHGvPFaxSkCIHLPwM7cgk/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyhsH-N_zduOs0Ipn5Yie-IJ-z5Q_NfypsaWD4Y3CoW5gsQLThtFiHByZZAR-BjMmDC/exec',
   SHEET_DOCS:   'ฐานข้อมูลเอกสาร',
   SHEET_ITEMS:  'ฐานข้อมูลรายการ',
   SHEET_USERS:  'users',
@@ -1923,9 +1923,15 @@ function saveSettings() {
 
 async function saveLogoSigToSheets(type, value) {
   try {
-    const params = new URLSearchParams({ action: 'saveSetting', key: type, value });
-    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
-  } catch(e) {}
+    const r = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'saveSetting', key: type, value }),
+    });
+    return r.json();
+  } catch(e) {
+    showToast('บันทึกไม่สำเร็จ (เครือข่ายผิดพลาด)', 'error');
+  }
 }
 
 function handleUpload(event, type) {
