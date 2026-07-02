@@ -360,7 +360,7 @@
     box-shadow: var(--shadow-md);
   }
   .doc-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-  .doc-logo-area { width: 120px; height: 70px; border: 1.5px dashed #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 11px; overflow: hidden; }
+  .doc-logo-area { width: 160px; height: 90px; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 11px; overflow: hidden; }
   .doc-logo-area img { width: 100%; height: 100%; object-fit: contain; }
   .doc-title { font-size: 22px; font-weight: 700; color: #1565c0; text-align: right; }
   .doc-meta { text-align: right; font-size: 12px; line-height: 1.8; }
@@ -508,10 +508,20 @@
   }
 
   @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { size: A4 portrait; margin: 0; }
+    html, body { width: 210mm; min-height: 297mm; margin: 0; padding: 0; }
     body * { visibility: hidden; }
     .doc-sheet, .doc-sheet * { visibility: visible; }
-    .doc-sheet { position: fixed; left: 0; top: 0; margin: 0; box-shadow: none; }
+    .doc-sheet {
+      position: fixed; left: 0; top: 0; margin: 0; box-shadow: none;
+      width: 210mm; min-height: 297mm; padding: 20mm 18mm;
+    }
+    .doc-logo-area { width: 160px !important; height: 90px !important; border: none !important; }
+    .doc-logo-area img { width: 100% !important; height: 100% !important; object-fit: contain !important; }
     .no-print { display: none !important; }
+    .bottom-nav { display: none !important; }
+    .mobile-topbar { display: none !important; }
   }
 
   /* Confirm dialog */
@@ -612,6 +622,10 @@
       <button class="nav-item" onclick="showPage('logs')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         ประวัติการเข้าใช้
+      </button>
+      <button class="nav-item" onclick="showPage('report')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        สรุปรายงาน
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -754,6 +768,20 @@
               <div class="upload-label" style="margin-top:10px">คลิกหรือลากไฟล์มาวาง</div>
               <div class="upload-hint">PNG, JPG, SVG · แนะนำพื้นหลังโปร่งใส</div>
             </div>
+            <!-- ปรับขนาดโลโก้ -->
+            <div style="margin-top:14px">
+              <label style="font-size:12px;font-weight:600;color:var(--navy);display:flex;justify-content:space-between">
+                <span>ขนาดโลโก้</span>
+                <span id="logo-size-val">160 × 90 px</span>
+              </label>
+              <input type="range" id="logo-size" min="60" max="280" value="160" step="10"
+                style="width:100%;margin-top:6px;accent-color:var(--navy)"
+                oninput="updateSizeLabel('logo',this.value); previewSizeChange('logo',this.value)"
+                onchange="saveSizeToSettings('logo',this.value)">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:2px">
+                <span>เล็ก</span><span>กลาง</span><span>ใหญ่</span>
+              </div>
+            </div>
             <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="clearUpload('logo')">ลบโลโก้</button>
           </div>
         </div>
@@ -766,6 +794,20 @@
               <img id="sig-preview" class="upload-preview" style="display:none">
               <div class="upload-label" style="margin-top:10px">คลิกหรือลากไฟล์มาวาง</div>
               <div class="upload-hint">PNG, JPG · แนะนำพื้นหลังขาวหรือโปร่งใส</div>
+            </div>
+            <!-- ปรับขนาดลายเซ็น -->
+            <div style="margin-top:14px">
+              <label style="font-size:12px;font-weight:600;color:var(--navy);display:flex;justify-content:space-between">
+                <span>ขนาดลายเซ็น</span>
+                <span id="sig-size-val">160 × 65 px</span>
+              </label>
+              <input type="range" id="sig-size" min="60" max="280" value="160" step="10"
+                style="width:100%;margin-top:6px;accent-color:var(--navy)"
+                oninput="updateSizeLabel('sig',this.value); previewSizeChange('sig',this.value)"
+                onchange="saveSizeToSettings('sig',this.value)">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-400);margin-top:2px">
+                <span>เล็ก</span><span>กลาง</span><span>ใหญ่</span>
+              </div>
             </div>
             <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="clearUpload('sig')">ลบลายเซ็น</button>
           </div>
@@ -820,6 +862,68 @@
       </div>
     </div>
 
+    <!-- ══ REPORT PAGE ══ -->
+    <div class="page" id="page-report">
+      <div class="page-header">
+        <div><h1>สรุปรายงานบิล</h1><p>รายการเอกสารทั้งหมดสำหรับส่งบัญชี</p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="loadReport()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            รีเฟรช
+          </button>
+          <button class="btn btn-green btn-sm" onclick="exportReportExcel()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Excel
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="exportReportPDF()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0">
+              <label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">วันที่เริ่มต้น</label>
+              <input type="date" id="r-date-from" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">วันที่สิ้นสุด</label>
+              <input type="date" id="r-date-to" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:13px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">ประเภทเอกสาร</label>
+              <select id="r-type" class="filter-select" style="padding:8px 12px;font-size:13px">
+                <option value="">ทุกประเภท</option>
+                <option value="ใบเสนอราคา">ใบเสนอราคา</option>
+                <option value="ใบส่งของ">ใบส่งของ</option>
+                <option value="ใบแจ้งหนี้">ใบแจ้งหนี้</option>
+                <option value="ใบกำกับภาษี">ใบกำกับภาษี</option>
+                <option value="ใบเสร็จรับเงิน">ใบเสร็จรับเงิน</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="loadReport()">ค้นหา</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div id="report-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px"></div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap" id="report-table"></div>
+        </div>
+      </div>
+
+      <!-- Print area (hidden) -->
+      <div id="report-print-area" style="display:none"></div>
+    </div>
+
   </main>
 
   <!-- Bottom navigation (mobile only, shown via CSS) -->
@@ -843,6 +947,10 @@
     <button class="bn-item" onclick="showPage('users')" id="bn-users" data-page="users">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       ผู้ใช้
+    </button>
+    <button class="bn-item" onclick="showPage('report')" data-page="report">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      รายงาน
     </button>
   </nav>
 </div>
@@ -1084,6 +1192,11 @@ window.onload = () => {
   const d7 = new Date(); d7.setDate(d7.getDate()+7);
   document.getElementById('f-valid').value = d7.toISOString().split('T')[0];
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  // ตั้งค่าวันที่เริ่มต้นของรายงาน (ต้นเดือนถึงปัจจุบัน)
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  document.getElementById('r-date-from').value = firstDay;
+  document.getElementById('r-date-to').value = today;
 
   // Load settings from localStorage (logo/sig persist here)
   loadSettings();
@@ -1266,7 +1379,7 @@ function showPage(name) {
   document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name)?.classList.add('active');
   // highlight nav
-  const navMap = { dashboard:0, docs:1, settings:8, users:9, logs:10 };
+  const navMap = { dashboard:0, docs:1, settings:8, users:9, logs:10, report:11 };
   document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
   document.querySelector(`.bn-item[data-page="${name}"]`)?.classList.add('active');
   // scroll to top on page change (helps mobile)
@@ -1628,11 +1741,15 @@ const SIG_LABELS = {
 
 function buildPreview(data) {
   const s = STATE.settings;
+  const logoW = s.logo_size || 160;
+  const logoH = Math.round(logoW * 0.5625);
+  const sigW  = s.sig_size  || 160;
+  const sigH  = Math.round(sigW * 0.4);
   const logoHtml = s.logo
-    ? `<img src="${s.logo}" style="max-width:120px;max-height:70px;object-fit:contain">`
+    ? `<img src="${s.logo}" style="max-width:${logoW}px;max-height:${logoH}px;object-fit:contain">`
     : `<span style="font-size:11px;color:#bbb">โลโก้ร้าน</span>`;
   const sigHtml  = s.sig
-    ? `<img src="${s.sig}" style="max-height:60px;max-width:160px;object-fit:contain">`
+    ? `<img src="${s.sig}" style="max-height:${sigH}px;max-width:${sigW}px;object-fit:contain">`
     : '';
   const sigPair  = SIG_LABELS[data.type] || ['ผู้ออก','ผู้รับ'];
   const rowsHtml = data.items.map((it,i) => `
@@ -1653,7 +1770,7 @@ function buildPreview(data) {
   const html = `<div class="doc-sheet" id="the-doc">
     <div class="doc-header-row">
       <div>
-        <div class="doc-logo-area">${logoHtml}</div>
+        <div class="doc-logo-area" style="width:${logoW}px;height:${logoH}px">${logoHtml}</div>
         <div style="margin-top:10px;font-size:12px;color:#555;line-height:1.7">
           <strong style="font-size:13px;color:#111">${escHtml(s.company||'บริษัท วสันต์ปริ้นเตอร์ แอนด์ เซอร์วิส จำกัด')}</strong><br>
           เลขที่เสียภาษี: ${escHtml(s.taxid||'0505560010427')}<br>
@@ -1739,7 +1856,7 @@ function printDoc() {
       body{margin:0;font-family:'Sarabun',sans-serif}
       .doc-sheet{width:210mm;min-height:297mm;padding:20mm 18mm;font-size:13px;color:#111;font-family:'Sarabun',sans-serif}
       .doc-header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
-      .doc-logo-area{width:120px;height:70px;border:1.5px dashed #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;overflow:hidden}
+      .doc-logo-area{width:160px;height:90px;border:none;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;overflow:hidden}
       .doc-logo-area img{width:100%;height:100%;object-fit:contain}
       .doc-title{font-size:22px;font-weight:700;color:#1565c0;text-align:right}
       .doc-meta{text-align:right;font-size:12px;line-height:1.8}
@@ -1912,6 +2029,8 @@ async function loadSettings() {
     if (STATE.settings.logo) showUploadPreview('logo', STATE.settings.logo);
     if (STATE.settings.sig)  showUploadPreview('sig',  STATE.settings.sig);
   }
+  // ใช้ขนาดที่บันทึกไว้
+  setTimeout(() => applySavedSizes(), 100);
 }
 
 function saveSettings() {
@@ -2050,6 +2169,232 @@ function numberToThaiWords(amount) {
   if (satang > 0) result += convert(satang) + 'สตางค์';
   else result += 'ถ้วน';
   return result;
+}
+
+// ════════════════════════════════════════════════
+// REPORT / EXPORT
+// ════════════════════════════════════════════════
+function getReportData() {
+  const from  = document.getElementById('r-date-from').value;
+  const to    = document.getElementById('r-date-to').value;
+  const type  = document.getElementById('r-type').value;
+
+  return STATE.docs.filter(d => {
+    const date = d.วันที่สร้าง || '';
+    const matchFrom = !from || date >= from;
+    const matchTo   = !to   || date <= to;
+    const matchType = !type || d.ประเภทเอกสาร === type;
+    return matchFrom && matchTo && matchType;
+  }).map(d => {
+    // คำนวณยอดจาก items
+    const items = STATE.items.filter(it => it.เลขที่เอกสาร === d.เลขที่เอกสาร);
+    const subTotal = items.reduce((a, it) => a + ((parseFloat(it.จำนวน)||0) * (parseFloat(it.ราคาต่อหน่วย)||0)), 0);
+    const disc    = parseFloat(d.ส่วนลด) || 0;
+    const after   = subTotal - disc;
+    const hasVat  = d['มี VAT ?'] === 'มี VAT';
+    const vat     = hasVat ? after * 7 / 107 : 0;
+    const beforeVat = hasVat ? after - vat : after;
+    return {
+      เลขที่เอกสาร: d.เลขที่เอกสาร,
+      ประเภทเอกสาร: d.ประเภทเอกสาร,
+      วันที่: d.วันที่สร้าง,
+      ชื่อลูกค้า: d.ชื่อลูกค้า,
+      'VAT': d['มี VAT ?'],
+      ยอดก่อนVAT: beforeVat,
+      VATบาท: vat,
+      ยอดรวม: after,
+    };
+  });
+}
+
+function loadReport() {
+  const data = getReportData();
+  // Summary cards
+  const types = ['ใบเสนอราคา','ใบส่งของ','ใบแจ้งหนี้','ใบกำกับภาษี','ใบเสร็จรับเงิน'];
+  const colors = ['#1d4ed8','#166534','#9a3412','#7e22ce','#065f46'];
+  const totalAll = data.reduce((a,r) => a + r.ยอดรวม, 0);
+  document.getElementById('report-summary').innerHTML = `
+    <div class="stat-card" style="border-left:4px solid var(--navy)">
+      <div class="stat-label">ทั้งหมด</div>
+      <div class="stat-value">${data.length}</div>
+      <div class="stat-sub">ยอดรวม ${fmtNum(totalAll)} บาท</div>
+    </div>
+    ${types.map((t,i) => {
+      const filtered = data.filter(r => r.ประเภทเอกสาร === t);
+      const total = filtered.reduce((a,r) => a + r.ยอดรวม, 0);
+      return `<div class="stat-card" style="border-left:4px solid ${colors[i]}">
+        <div class="stat-label">${t}</div>
+        <div class="stat-value" style="font-size:20px">${filtered.length}</div>
+        <div class="stat-sub">${fmtNum(total)} บาท</div>
+      </div>`;
+    }).join('')}`;
+
+  // Table
+  if (!data.length) {
+    document.getElementById('report-table').innerHTML = '<div class="empty-state"><p>ไม่พบข้อมูล</p></div>';
+    return;
+  }
+  const rows = data.map((r,i) => `<tr>
+    <td>${i+1}</td>
+    <td><strong>${escHtml(r.เลขที่เอกสาร)}</strong></td>
+    <td><span class="badge badge-${r.ประเภทเอกสาร==='ใบเสนอราคา'?'qt':r.ประเภทเอกสาร==='ใบส่งของ'?'do':r.ประเภทเอกสาร==='ใบแจ้งหนี้'?'iv':r.ประเภทเอกสาร==='ใบกำกับภาษี'?'tv':'rt'}">${escHtml(r.ประเภทเอกสาร)}</span></td>
+    <td style="white-space:nowrap">${formatThaiDate(r.วันที่)}</td>
+    <td>${escHtml(r.ชื่อลูกค้า)}</td>
+    <td style="text-align:right">${fmtNum(r.ยอดก่อนVAT)}</td>
+    <td style="text-align:right">${fmtNum(r.VATบาท)}</td>
+    <td style="text-align:right"><strong>${fmtNum(r.ยอดรวม)}</strong></td>
+  </tr>`).join('');
+  const grandTotal = data.reduce((a,r) => a + r.ยอดรวม, 0);
+  const grandVAT   = data.reduce((a,r) => a + r.VATบาท, 0);
+  document.getElementById('report-table').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>#</th><th>เลขที่</th><th>ประเภท</th><th>วันที่</th><th>ลูกค้า</th>
+        <th style="text-align:right">ก่อน VAT</th>
+        <th style="text-align:right">VAT</th>
+        <th style="text-align:right">ยอดรวม</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr style="background:var(--gray-100);font-weight:700">
+          <td colspan="5" style="text-align:right;padding:10px 14px">รวมทั้งหมด</td>
+          <td style="text-align:right;padding:10px 14px">${fmtNum(grandTotal - grandVAT)}</td>
+          <td style="text-align:right;padding:10px 14px">${fmtNum(grandVAT)}</td>
+          <td style="text-align:right;padding:10px 14px;color:var(--navy);font-size:15px">${fmtNum(grandTotal)}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
+function exportReportExcel() {
+  const data = getReportData();
+  if (!data.length) { showToast('ไม่มีข้อมูลสำหรับ Export', 'error'); return; }
+
+  // สร้าง CSV แล้วดาวน์โหลด (Excel เปิดได้)
+  const headers = ['ลำดับ','เลขที่เอกสาร','ประเภทเอกสาร','วันที่','ชื่อลูกค้า','ยอดก่อน VAT','VAT','ยอดรวม (บาท)'];
+  const rows = data.map((r,i) => [
+    i+1, r.เลขที่เอกสาร, r.ประเภทเอกสาร,
+    r.วันที่, r.ชื่อลูกค้า,
+    r.ยอดก่อนVAT.toFixed(2), r.VATบาท.toFixed(2), r.ยอดรวม.toFixed(2)
+  ]);
+  const grandTotal = data.reduce((a,r) => a + r.ยอดรวม, 0);
+  const grandVAT   = data.reduce((a,r) => a + r.VATบาท, 0);
+  rows.push(['','','','','รวมทั้งหมด',(grandTotal-grandVAT).toFixed(2),grandVAT.toFixed(2),grandTotal.toFixed(2)]);
+
+  const s = STATE.settings;
+  const title = `สรุปรายงานบิล - ${s.company || 'วสันต์ปริ้นเตอร์'}`;
+  const csvContent = '\uFEFF' + [
+    [title], [''], headers, ...rows
+  ].map(row => row.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `รายงานบิล_${new Date().toLocaleDateString('th-TH').replace(/\//g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Export Excel สำเร็จ ✓', 'success');
+}
+
+async function exportReportPDF() {
+  const data = getReportData();
+  if (!data.length) { showToast('ไม่มีข้อมูลสำหรับ Export', 'error'); return; }
+  showLoading(true);
+  const s = STATE.settings;
+  const grandTotal = data.reduce((a,r) => a + r.ยอดรวม, 0);
+  const grandVAT   = data.reduce((a,r) => a + r.VATบาท, 0);
+  const rowsHtml = data.map((r,i) => `
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px 8px;text-align:center">${i+1}</td>
+      <td style="padding:6px 8px">${r.เลขที่เอกสาร}</td>
+      <td style="padding:6px 8px">${r.ประเภทเอกสาร}</td>
+      <td style="padding:6px 8px;white-space:nowrap">${formatThaiDate(r.วันที่)}</td>
+      <td style="padding:6px 8px">${r.ชื่อลูกค้า}</td>
+      <td style="padding:6px 8px;text-align:right">${fmtNum(r.ยอดก่อนVAT)}</td>
+      <td style="padding:6px 8px;text-align:right">${fmtNum(r.VATบาท)}</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:700">${fmtNum(r.ยอดรวม)}</td>
+    </tr>`).join('');
+
+  const html = `<div id="report-pdf-content" style="font-family:'Sarabun',sans-serif;padding:20mm;width:297mm;color:#111">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;border-bottom:2px solid #1a2744;padding-bottom:14px">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:#1a2744">สรุปรายงานบิล</div>
+        <div style="font-size:13px;color:#666;margin-top:4px">${s.company || 'วสันต์ปริ้นเตอร์ แอนด์ เซอร์วิส จำกัด'}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">พิมพ์วันที่: ${new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px">จำนวนเอกสารทั้งหมด: <strong>${data.length} ใบ</strong></div>
+        <div style="font-size:16px;font-weight:700;color:#1a2744;margin-top:6px">ยอดรวมสุทธิ: ${fmtNum(grandTotal)} บาท</div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#1a2744;color:white">
+          <th style="padding:8px;text-align:center;width:30px">#</th>
+          <th style="padding:8px;text-align:left">เลขที่</th>
+          <th style="padding:8px;text-align:left">ประเภท</th>
+          <th style="padding:8px;text-align:left">วันที่</th>
+          <th style="padding:8px;text-align:left">ลูกค้า</th>
+          <th style="padding:8px;text-align:right">ก่อน VAT</th>
+          <th style="padding:8px;text-align:right">VAT</th>
+          <th style="padding:8px;text-align:right">ยอดรวม</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>
+        <tr style="background:#f5f5f5;font-weight:700;font-size:13px">
+          <td colspan="5" style="padding:10px 8px;text-align:right">รวมทั้งหมด</td>
+          <td style="padding:10px 8px;text-align:right">${fmtNum(grandTotal-grandVAT)}</td>
+          <td style="padding:10px 8px;text-align:right">${fmtNum(grandVAT)}</td>
+          <td style="padding:10px 8px;text-align:right;color:#1a2744;font-size:15px">${fmtNum(grandTotal)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>`;
+
+  document.getElementById('report-print-area').innerHTML = html;
+  document.getElementById('report-print-area').style.display = 'block';
+  try {
+    const el = document.getElementById('report-pdf-content');
+    const canvas = await html2canvas(el, { scale:2, useCORS:true, logging:false });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
+    pdf.save(`รายงานบิล_${new Date().toLocaleDateString('th-TH').replace(/\//g,'-')}.pdf`);
+    showToast('Export PDF สำเร็จ ✓', 'success');
+  } catch(e) { showToast('Export PDF ไม่สำเร็จ', 'error'); }
+  document.getElementById('report-print-area').style.display = 'none';
+  showLoading(false);
+}
+
+function updateSizeLabel(type, val) {
+  const w = parseInt(val);
+  const h = type === 'logo' ? Math.round(w * 0.5625) : Math.round(w * 0.4);
+  document.getElementById(`${type}-size-val`).textContent = `${w} × ${h} px`;
+}
+
+function previewSizeChange(type, val) {
+  const w = parseInt(val);
+  const h = type === 'logo' ? Math.round(w * 0.5625) : Math.round(w * 0.4);
+  const prev = document.getElementById(`${type}-preview`);
+  if (prev) { prev.style.maxWidth = w + 'px'; prev.style.maxHeight = h + 'px'; }
+}
+
+function saveSizeToSettings(type, val) {
+  STATE.settings[type + '_size'] = parseInt(val);
+  localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
+  showToast(`บันทึกขนาด${type==='logo'?'โลโก้':'ลายเซ็น'}แล้ว ✓`, 'success');
+}
+
+function applySavedSizes() {
+  const logoSize = STATE.settings.logo_size || 160;
+  const sigSize  = STATE.settings.sig_size  || 160;
+  const logoEl = document.getElementById('logo-size');
+  const sigEl  = document.getElementById('sig-size');
+  if (logoEl) { logoEl.value = logoSize; updateSizeLabel('logo', logoSize); previewSizeChange('logo', logoSize); }
+  if (sigEl)  { sigEl.value  = sigSize;  updateSizeLabel('sig',  sigSize);  previewSizeChange('sig',  sigSize);  }
 }
 
 // Close modal on overlay click
