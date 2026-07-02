@@ -1739,6 +1739,14 @@ const SIG_LABELS = {
   'ใบเสร็จรับเงิน': ['ผู้ชำระเงิน', 'ผู้รับเงิน'],
 };
 
+const DOC_COLORS = {
+  'ใบเสนอราคา':  '#1a3a6b',
+  'ใบส่งของ':    '#0f6b3e',
+  'ใบแจ้งหนี้':  '#7c3d0f',
+  'ใบกำกับภาษี': '#5b2d8e',
+  'ใบเสร็จรับเงิน': '#1a6b5a',
+};
+
 function buildPreview(data) {
   const s = STATE.settings;
   const logoW = s.logo_size || 160;
@@ -1779,7 +1787,7 @@ function buildPreview(data) {
         </div>
       </div>
       <div>
-        <div class="doc-title">${escHtml(data.type)}</div>
+        <div class="doc-title" style="color:${DOC_COLORS[data.type]||'#1a2744'}">${escHtml(data.type)}</div>
         <div class="doc-meta" style="margin-top:10px">
           เลขที่: <span>${escHtml(data.docNo)}</span><br>
           วันที่ออก: <span>${formatThaiDate(data.date)}</span><br>
@@ -1789,7 +1797,7 @@ function buildPreview(data) {
       </div>
     </div>
 
-    <div class="doc-parties">
+    <div class="doc-parties" style="border-top:2px solid ${DOC_COLORS[data.type]||'#1a2744'}">
       <div></div>
       <div>
         <div class="doc-party-label">ออกให้กับ</div>
@@ -1804,7 +1812,7 @@ function buildPreview(data) {
     </div>
 
     <table class="doc-items-table">
-      <thead><tr>
+      <thead><tr style="background:${DOC_COLORS[data.type]||'#1a2744'}">
         <th style="width:36px">#</th>
         <th>สินค้า / บริการ</th>
         <th style="width:70px;text-align:right">จำนวน</th>
@@ -1820,7 +1828,7 @@ function buildPreview(data) {
           ${data.discount ? `<tr><td style="color:#555">ส่วนลด</td><td>(${fmtNum(data.discount)})</td></tr>` : ''}
           ${data.hasVat ? `<tr><td style="color:#555">ราคาสุทธิ (ก่อน VAT)</td><td>${fmtNum(data.subtotal)}</td></tr>
           <tr><td style="color:#555">ภาษีมูลค่าเพิ่ม 7%</td><td>${fmtNum(data.vat)}</td></tr>` : ''}
-          <tr class="grand-row"><td>ยอดรวมสุทธิ</td><td>${fmtNum(data.grand)}</td></tr>
+          <tr class="grand-row" style="color:${DOC_COLORS[data.type]||'#1a2744'}"><td>ยอดรวมสุทธิ</td><td>${fmtNum(data.grand)}</td></tr>
         </table>
       </div>
     </div>
