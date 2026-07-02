@@ -1742,9 +1742,9 @@ const SIG_LABELS = {
 function buildPreview(data) {
   const s = STATE.settings;
   const logoW = s.logo_size || 160;
-  const logoH = Math.round(logoW * 0.5625);
+  const logoH = Math.round(logoW * 0.56);
   const sigW  = s.sig_size  || 160;
-  const sigH  = Math.round(sigW * 0.4);
+  const sigH  = Math.round(sigW * 0.35);
   const logoHtml = s.logo
     ? `<img src="${s.logo}" style="max-width:${logoW}px;max-height:${logoH}px;object-fit:contain">`
     : `<span style="font-size:11px;color:#bbb">โลโก้ร้าน</span>`;
@@ -1770,7 +1770,7 @@ function buildPreview(data) {
   const html = `<div class="doc-sheet" id="the-doc">
     <div class="doc-header-row">
       <div>
-        <div class="doc-logo-area" style="width:${logoW}px;height:${logoH}px">${logoHtml}</div>
+        <div class="doc-logo-area" style="width:${logoW}px;height:${logoH}px;max-width:220px;max-height:130px">${logoHtml}</div>
         <div style="margin-top:10px;font-size:12px;color:#555;line-height:1.7">
           <strong style="font-size:13px;color:#111">${escHtml(s.company||'บริษัท วสันต์ปริ้นเตอร์ แอนด์ เซอร์วิส จำกัด')}</strong><br>
           เลขที่เสียภาษี: ${escHtml(s.taxid||'0505560010427')}<br>
@@ -1831,13 +1831,13 @@ function buildPreview(data) {
 
     <div class="doc-sigs">
       <div class="doc-sig-box">
-        <div class="doc-sig-area"></div>
+        <div class="doc-sig-area" style="height:${sigH}px"></div>
         <div class="doc-sig-name">.........................................</div>
         <div class="doc-sig-label">${escHtml(sigPair[0])}</div>
         <div class="doc-sig-date">วันที่: ...................</div>
       </div>
       <div class="doc-sig-box">
-        <div class="doc-sig-area">${sigHtml}</div>
+        <div class="doc-sig-area" style="height:${sigH}px">${sigHtml}</div>
         <div class="doc-sig-name">${escHtml(s.company||'บริษัท วสันต์ปริ้นเตอร์ฯ')}</div>
         <div class="doc-sig-label">${escHtml(sigPair[1])}</div>
         <div class="doc-sig-date">วันที่: ${formatThaiDate(data.date)}</div>
@@ -2371,13 +2371,13 @@ async function exportReportPDF() {
 
 function updateSizeLabel(type, val) {
   const w = parseInt(val);
-  const h = type === 'logo' ? Math.round(w * 0.5625) : Math.round(w * 0.4);
+  const h = type === 'logo' ? Math.round(w * 0.56) : Math.round(w * 0.35);
   document.getElementById(`${type}-size-val`).textContent = `${w} × ${h} px`;
 }
 
 function previewSizeChange(type, val) {
   const w = parseInt(val);
-  const h = type === 'logo' ? Math.round(w * 0.5625) : Math.round(w * 0.4);
+  const h = type === 'logo' ? Math.round(w * 0.56) : Math.round(w * 0.35);
   const prev = document.getElementById(`${type}-preview`);
   if (prev) { prev.style.maxWidth = w + 'px'; prev.style.maxHeight = h + 'px'; }
 }
