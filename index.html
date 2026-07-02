@@ -362,7 +362,7 @@
   .doc-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
   .doc-logo-area { width: 160px; height: 90px; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 11px; overflow: hidden; }
   .doc-logo-area img { width: 100%; height: 100%; object-fit: contain; }
-  .doc-title { font-size: 22px; font-weight: 700; color: #1565c0; text-align: right; }
+  .doc-title { font-size: 22px; font-weight: 700; text-align: right; }
   .doc-meta { text-align: right; font-size: 12px; line-height: 1.8; }
   .doc-meta span { font-weight: 600; }
   .doc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px; border-top: 2px solid var(--navy); padding-top: 14px; }
@@ -371,7 +371,7 @@
   .doc-party-detail { font-size: 12px; line-height: 1.7; color: #444; }
   .doc-items-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
   .doc-items-table th {
-    background: var(--navy); color: white;
+    color: white;
     padding: 8px 10px; font-size: 12px; text-align: left;
   }
   .doc-items-table th:last-child, .doc-items-table td:last-child { text-align: right; }
@@ -383,7 +383,7 @@
   .doc-totals table { width: 100%; font-size: 13px; }
   .doc-totals td { padding: 4px 8px; }
   .doc-totals td:last-child { text-align: right; font-weight: 600; }
-  .doc-totals .grand-row td { font-size: 15px; font-weight: 700; border-top: 2px solid #1565c0; padding-top: 8px; color: var(--navy); }
+  .doc-totals .grand-row td { font-size: 15px; font-weight: 700; border-top: 2px solid currentColor; padding-top: 8px; }
   .doc-amount-words { font-size: 12px; color: #555; margin-bottom: 14px; font-style: italic; }
   .doc-remark { font-size: 12px; color: #555; margin-bottom: 20px; }
   .doc-payment-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; }
@@ -1866,20 +1866,20 @@ function printDoc() {
       .doc-header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
       .doc-logo-area{width:160px;height:90px;border:none;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;overflow:hidden}
       .doc-logo-area img{width:100%;height:100%;object-fit:contain}
-      .doc-title{font-size:22px;font-weight:700;color:#1565c0;text-align:right}
+      .doc-title{font-size:22px;font-weight:700;text-align:right}
       .doc-meta{text-align:right;font-size:12px;line-height:1.8}
       .doc-meta span{font-weight:600}
-      .doc-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;border-top:2px solid #1565c0;padding-top:14px}
+      .doc-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;padding-top:14px}
       .doc-party-label{font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
       .doc-party-name{font-weight:700;font-size:13.5px}
       .doc-party-detail{font-size:12px;line-height:1.7;color:#444}
       .doc-items-table{width:100%;border-collapse:collapse;margin-bottom:14px}
-      .doc-items-table th{background:#1565c0;color:white;padding:8px 10px;font-size:12px;text-align:left}
+      .doc-items-table th{color:white;padding:8px 10px;font-size:12px;text-align:left}
       .doc-items-table th:last-child,.doc-items-table td:last-child,.doc-items-table th:nth-child(3),.doc-items-table td:nth-child(3),.doc-items-table th:nth-child(4),.doc-items-table td:nth-child(4){text-align:right}
       .doc-items-table td{padding:8px 10px;border-bottom:1px solid #eee;font-size:13px}
       .doc-totals{margin-left:auto;width:260px}.doc-totals table{width:100%;font-size:13px}
       .doc-totals td{padding:4px 8px}.doc-totals td:last-child{text-align:right;font-weight:600}
-      .grand-row td{font-size:15px;font-weight:700;border-top:2px solid #1565c0;padding-top:8px;color:#1565c0}
+      .grand-row td{font-size:15px;font-weight:700;border-top:2px solid currentColor;padding-top:8px}
       .doc-amount-words{font-size:12px;color:#555;margin-bottom:14px;font-style:italic}
       .doc-remark{font-size:12px;color:#555;margin-bottom:20px}
       .doc-payment-box{border:1px solid #ddd;border-radius:6px;padding:10px 14px;font-size:12px;margin-bottom:20px}
