@@ -524,7 +524,46 @@
     .mobile-topbar { display: none !important; }
   }
 
-  /* Confirm dialog */
+  /* ─── AUTOCOMPLETE ─────────────────────────── */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 999;
+    background: var(--white); border: 1.5px solid var(--navy);
+    border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+    max-height: 220px; overflow-y: auto;
+    box-shadow: var(--shadow-md);
+  }
+  .autocomplete-item {
+    padding: 10px 14px; cursor: pointer; font-size: 13.5px;
+    border-bottom: 1px solid var(--gray-100);
+    transition: background .12s;
+  }
+  .autocomplete-item:hover, .autocomplete-item.active { background: #f0f4ff; }
+  .autocomplete-item .ac-name { font-weight: 600; color: var(--navy); }
+  .autocomplete-item .ac-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ─── STATUS BADGE ──────────────────────────── */
+  .badge-pending  { background: #fff8e1; color: #f57c00; }
+  .badge-confirmed { background: #e8f5e9; color: #2e7d32; }
+  .badge-paid     { background: #e3f2fd; color: #1565c0; }
+  .badge-cancelled { background: #fce4ec; color: #c62828; }
+
+  /* ─── MOBILE LOGO SIZE ──────────────────────── */
+  @media (max-width: 600px) {
+    .doc-logo-area { max-width: 90px !important; max-height: 55px !important; }
+    .doc-logo-area img { max-width: 90px !important; max-height: 55px !important; }
+  }
+  @media (max-width: 768px) and (min-width: 601px) {
+    .doc-logo-area { max-width: 120px !important; max-height: 70px !important; }
+    .doc-logo-area img { max-width: 120px !important; max-height: 70px !important; }
+  }
+
+  /* ─── STATUS SELECT IN TABLE ────────────────── */
+  .status-select {
+    border: none; border-radius: 20px; padding: 3px 10px;
+    font-size: 11.5px; font-weight: 600; cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+  }
   .confirm-dialog {
     background: var(--white); border-radius: var(--radius-lg);
     padding: 28px; max-width: 380px; box-shadow: var(--shadow-lg);
@@ -1000,7 +1039,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>ชื่อลูกค้า / หน่วยงาน</label>
-          <input id="f-cname" placeholder="ชื่อลูกค้า">
+          <div class="autocomplete-wrap">
+            <input id="f-cname" placeholder="พิมพ์เพื่อค้นหาลูกค้า..." autocomplete="off"
+              oninput="onCustomerSearch(this.value)" onblur="setTimeout(()=>closeAutocomplete(),200)">
+            <div class="autocomplete-list" id="ac-list" style="display:none"></div>
+          </div>
         </div>
         <div class="form-group">
           <label>เลขที่เสียภาษีลูกค้า</label>
@@ -1139,6 +1182,23 @@
     <div class="confirm-btns">
       <button class="btn btn-outline" onclick="closeModal('confirm-modal')">ยกเลิก</button>
       <button class="btn btn-danger" id="confirm-ok-btn">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Convert Doc Modal -->
+<div class="modal-overlay" id="convert-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h2>สร้างเอกสารต่อเนื่อง</h2>
+      <button class="modal-close" onclick="closeModal('convert-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:18px">เลือกประเภทเอกสารที่ต้องการสร้างจาก <strong id="convert-from-doc"></strong></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="convert-options"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('convert-modal')">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -1463,21 +1523,44 @@ function buildDocsTableHTML(docs, mini) {
   if (!docs.length) return `<div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>ไม่พบเอกสาร</p></div>`;
   const isAdmin = STATE.currentUser?.role === 'admin';
   const badgeMap = { 'ใบเสนอราคา':'badge-qt','ใบส่งของ':'badge-do','ใบแจ้งหนี้':'badge-iv','ใบกำกับภาษี':'badge-tv','ใบเสร็จรับเงิน':'badge-rt' };
+  const statusMap = {
+    'รอดำเนินการ': 'badge-pending',
+    'ยืนยันแล้ว':  'badge-confirmed',
+    'ชำระแล้ว':    'badge-paid',
+    'ยกเลิก':      'badge-cancelled',
+  };
   let rows = docs.map(d => {
-    const vat = d['มี VAT ?'] || '';
+    const vat    = d['มี VAT ?'] || '';
+    const status = d.สถานะ || 'รอดำเนินการ';
+    const statusClass = statusMap[status] || 'badge-pending';
     return `<tr>
       <td><strong>${d.เลขที่เอกสาร||''}</strong></td>
       <td><span class="badge ${badgeMap[d.ประเภทเอกสาร]||''}">${d.ประเภทเอกสาร||''}</span></td>
       <td style="white-space:nowrap">${formatThaiDate(d.วันที่สร้าง)}</td>
       <td>${d.ชื่อลูกค้า||''}</td>
-      ${mini ? '' : `<td>${vat}</td>`}
+      ${mini ? '' : `<td>
+        ${isAdmin ? `<select class="status-select ${statusClass}" onchange="updateDocStatus('${d.เลขที่เอกสาร}',this.value,this)"
+          style="background:${status==='รอดำเนินการ'?'#fff8e1':status==='ยืนยันแล้ว'?'#e8f5e9':status==='ชำระแล้ว'?'#e3f2fd':'#fce4ec'};
+          color:${status==='รอดำเนินการ'?'#f57c00':status==='ยืนยันแล้ว'?'#2e7d32':status==='ชำระแล้ว'?'#1565c0':'#c62828'}">
+          <option ${status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option>
+          <option ${status==='ยืนยันแล้ว'?'selected':''}>ยืนยันแล้ว</option>
+          <option ${status==='ชำระแล้ว'?'selected':''}>ชำระแล้ว</option>
+          <option ${status==='ยกเลิก'?'selected':''}>ยกเลิก</option>
+        </select>` : `<span class="badge ${statusClass}">${status}</span>`}
+      </td>`}
       <td style="white-space:nowrap">
         <button class="btn btn-outline btn-sm" onclick="previewExistingDoc('${d.เลขที่เอกสาร}')">ดู/พิมพ์</button>
-        ${isAdmin ? `<button class="btn btn-outline btn-sm" style="margin-left:4px" onclick="editDoc('${d.เลขที่เอกสาร}')">แก้ไข</button><button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="confirmDelete('${d.เลขที่เอกสาร}')">ลบ</button>` : ''}
+        ${isAdmin ? `
+        <button class="btn btn-outline btn-sm" style="margin-left:4px" onclick="editDoc('${d.เลขที่เอกสาร}')">แก้ไข</button>
+        <button class="btn btn-gold btn-sm" style="margin-left:4px" onclick="convertDoc('${d.เลขที่เอกสาร}')" title="สร้างเอกสารต่อเนื่อง">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          ต่อเนื่อง
+        </button>
+        <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="confirmDelete('${d.เลขที่เอกสาร}')">ลบ</button>` : ''}
       </td>
     </tr>`;
   }).join('');
-  return `<table><thead><tr><th>เลขที่</th><th>ประเภท</th><th>วันที่</th><th>ลูกค้า</th>${mini?'':'<th>VAT</th>'}<th>การดำเนินการ</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>เลขที่</th><th>ประเภท</th><th>วันที่</th><th>ลูกค้า</th>${mini?'':'<th>สถานะ</th>'}<th>การดำเนินการ</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // ════════════════════════════════════════════════
@@ -1659,6 +1742,7 @@ async function saveDoc() {
       ที่อยู่ลูกค้า1: data.caddr1, ที่อยู่ลูกค้า2: data.caddr2,
       เลขที่เสียภาษีลูกค้า: data.ctaxid, เบอร์โทรศัพท์ลูกค้า: data.ctel,
       อีเมล์ลูกค้า: data.cemail, หมายเหตุ: data.remark, คำค้น: data.keyword,
+      สถานะ: 'รอดำเนินการ',
       ส่วนลด: data.discount, 'มี VAT ?': data.hasVat ? 'มี VAT' : 'ไม่มี VAT',
     };
     if (STATE.editingDocId) {
@@ -2403,6 +2487,153 @@ function applySavedSizes() {
   const sigEl  = document.getElementById('sig-size');
   if (logoEl) { logoEl.value = logoSize; updateSizeLabel('logo', logoSize); previewSizeChange('logo', logoSize); }
   if (sigEl)  { sigEl.value  = sigSize;  updateSizeLabel('sig',  sigSize);  previewSizeChange('sig',  sigSize);  }
+}
+
+// ════════════════════════════════════════════════
+// AUTOCOMPLETE ลูกค้า
+// ════════════════════════════════════════════════
+function getUniqueCustomers() {
+  const seen = new Map();
+  STATE.docs.forEach(d => {
+    const name = (d.ชื่อลูกค้า||'').trim();
+    if (name && !seen.has(name)) {
+      seen.set(name, {
+        name,
+        addr1: d.ที่อยู่ลูกค้า1 || '',
+        addr2: d.ที่อยู่ลูกค้า2 || '',
+        taxid: d.เลขที่เสียภาษีลูกค้า || '',
+        tel:   d.เบอร์โทรศัพท์ลูกค้า || '',
+        email: d.อีเมล์ลูกค้า || '',
+      });
+    }
+  });
+  return Array.from(seen.values());
+}
+
+function onCustomerSearch(q) {
+  const list = document.getElementById('ac-list');
+  if (!q || q.length < 1) { list.style.display = 'none'; return; }
+  const customers = getUniqueCustomers();
+  const filtered = customers.filter(c =>
+    c.name.toLowerCase().includes(q.toLowerCase()) ||
+    (c.taxid && c.taxid.includes(q))
+  ).slice(0, 8);
+  if (!filtered.length) { list.style.display = 'none'; return; }
+  list.innerHTML = filtered.map((c, i) => `
+    <div class="autocomplete-item" onclick="selectCustomer(${i})" data-idx="${i}">
+      <div class="ac-name">${escHtml(c.name)}</div>
+      <div class="ac-sub">${escHtml(c.addr1 || c.taxid || '')}</div>
+    </div>`).join('');
+  list.style.display = 'block';
+  list._customers = filtered;
+}
+
+function selectCustomer(idx) {
+  const list = document.getElementById('ac-list');
+  const c = list._customers?.[idx];
+  if (!c) return;
+  document.getElementById('f-cname').value   = c.name;
+  document.getElementById('f-ctaxid').value  = c.taxid;
+  document.getElementById('f-caddr1').value  = c.addr1;
+  document.getElementById('f-caddr2').value  = c.addr2;
+  document.getElementById('f-ctel').value    = c.tel;
+  document.getElementById('f-cemail').value  = c.email;
+  list.style.display = 'none';
+}
+
+function closeAutocomplete() {
+  const list = document.getElementById('ac-list');
+  if (list) list.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════
+// STATUS UPDATE
+// ════════════════════════════════════════════════
+const STATUS_COLORS = {
+  'รอดำเนินการ': { bg:'#fff8e1', color:'#f57c00' },
+  'ยืนยันแล้ว':  { bg:'#e8f5e9', color:'#2e7d32' },
+  'ชำระแล้ว':    { bg:'#e3f2fd', color:'#1565c0' },
+  'ยกเลิก':      { bg:'#fce4ec', color:'#c62828' },
+};
+
+async function updateDocStatus(docNo, newStatus, selectEl) {
+  // อัพเดทสีปุ่ม
+  const sc = STATUS_COLORS[newStatus] || STATUS_COLORS['รอดำเนินการ'];
+  selectEl.style.background = sc.bg;
+  selectEl.style.color = sc.color;
+  // อัพเดท local state
+  const doc = STATE.docs.find(d => d.เลขที่เอกสาร === docNo);
+  if (doc) doc.สถานะ = newStatus;
+  // บันทึกลง Sheets
+  try {
+    const params = new URLSearchParams({ action: 'updateStatus', docNo, status: newStatus });
+    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    showToast(`อัพเดทสถานะเป็น "${newStatus}" แล้ว ✓`, 'success');
+  } catch(e) {
+    showToast('บันทึกสถานะไม่สำเร็จ', 'error');
+  }
+}
+
+// ════════════════════════════════════════════════
+// CONVERT DOC (สร้างเอกสารต่อเนื่อง)
+// ════════════════════════════════════════════════
+const CONVERT_OPTIONS = {
+  'ใบเสนอราคา':  ['ใบส่งของ','ใบแจ้งหนี้','ใบกำกับภาษี','ใบเสร็จรับเงิน'],
+  'ใบส่งของ':    ['ใบแจ้งหนี้','ใบกำกับภาษี','ใบเสร็จรับเงิน'],
+  'ใบแจ้งหนี้':  ['ใบกำกับภาษี','ใบเสร็จรับเงิน'],
+  'ใบกำกับภาษี': ['ใบเสร็จรับเงิน'],
+  'ใบเสร็จรับเงิน': [],
+};
+
+const DOC_ICONS = {
+  'ใบส่งของ':'📦', 'ใบแจ้งหนี้':'💰', 'ใบกำกับภาษี':'🧾', 'ใบเสร็จรับเงิน':'✅'
+};
+
+function convertDoc(docNo) {
+  const doc = STATE.docs.find(d => d.เลขที่เอกสาร === docNo);
+  if (!doc) return;
+  const options = CONVERT_OPTIONS[doc.ประเภทเอกสาร] || [];
+  if (!options.length) { showToast('ไม่สามารถสร้างเอกสารต่อเนื่องได้จากประเภทนี้', 'error'); return; }
+  document.getElementById('convert-from-doc').textContent = `${doc.เลขที่เอกสาร} (${doc.ประเภทเอกสาร})`;
+  document.getElementById('convert-options').innerHTML = options.map(type => `
+    <button class="btn btn-outline" style="padding:16px;flex-direction:column;gap:6px;height:auto;text-align:center"
+      onclick="doConvertDoc('${docNo}','${type}')">
+      <span style="font-size:24px">${DOC_ICONS[type]||'📄'}</span>
+      <span style="font-size:13px;font-weight:600">${type}</span>
+    </button>`).join('');
+  openModal('convert-modal');
+}
+
+function doConvertDoc(fromDocNo, toType) {
+  closeModal('convert-modal');
+  const doc   = STATE.docs.find(d => d.เลขที่เอกสาร === fromDocNo);
+  const items = STATE.items.filter(it => it.เลขที่เอกสาร === fromDocNo);
+  if (!doc) return;
+  STATE.editingDocId = null;
+  // เปิดฟอร์มสร้างใหม่พร้อมข้อมูลเดิม
+  document.getElementById('doc-modal-title').textContent = `สร้าง${toType}จาก ${fromDocNo}`;
+  document.getElementById('f-type').value    = toType;
+  document.getElementById('f-ref').value     = fromDocNo;
+  document.getElementById('f-cname').value   = doc.ชื่อลูกค้า || '';
+  document.getElementById('f-ctaxid').value  = doc.เลขที่เสียภาษีลูกค้า || '';
+  document.getElementById('f-caddr1').value  = doc.ที่อยู่ลูกค้า1 || '';
+  document.getElementById('f-caddr2').value  = doc.ที่อยู่ลูกค้า2 || '';
+  document.getElementById('f-ctel').value    = doc.เบอร์โทรศัพท์ลูกค้า || '';
+  document.getElementById('f-cemail').value  = doc.อีเมล์ลูกค้า || '';
+  document.getElementById('f-discount').value = doc.ส่วนลด || '0';
+  document.getElementById('f-remark').value  = doc.หมายเหตุ || '';
+  document.getElementById('f-keyword').value = doc.คำค้น || '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value    = today;
+  onDocTypeChange();
+  // ใส่รายการสินค้าเดิม
+  document.getElementById('items-body').innerHTML = '';
+  if (items.length) {
+    items.forEach(it => addItemRow(it['สินค้า / บริการ'], it.จำนวน, it.ราคาต่อหน่วย));
+  } else { addItemRow(); addItemRow(); }
+  recalcTotals();
+  openModal('doc-modal');
+  showToast(`คัดลอกข้อมูลจาก ${fromDocNo} แล้ว ✓`, 'success');
 }
 
 // Close modal on overlay click
