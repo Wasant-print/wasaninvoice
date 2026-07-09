@@ -573,56 +573,6 @@
   .confirm-dialog p { font-size: 14px; color: var(--gray-600); margin-bottom: 22px; }
   .confirm-btns { display: flex; gap: 10px; justify-content: center; }
 
-  /* ─── PIN LOGIN ─────────────────────────────── */
-  #login-screen {
-    min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #1a2744 0%, #243560 60%, #2d4a8a 100%);
-  }
-  .pin-box {
-    background: var(--white); border-radius: 24px;
-    padding: 40px 32px 36px; width: 340px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    text-align: center;
-  }
-  .pin-brand { margin-bottom: 24px; }
-  .pin-brand .brand-icon {
-    width: 60px; height: 60px; background: #1a2744;
-    border-radius: 16px; display: inline-flex;
-    align-items: center; justify-content: center; margin-bottom: 12px;
-  }
-  .pin-brand .brand-icon svg { color: var(--gold); }
-  .pin-brand h1 { font-size: 17px; font-weight: 700; color: var(--navy); line-height: 1.3; }
-  .pin-brand p { font-size: 12px; color: var(--gray-600); margin-top: 3px; }
-  .pin-dots {
-    display: flex; gap: 14px; justify-content: center; margin-bottom: 28px;
-  }
-  .pin-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    border: 2px solid #ccc; background: transparent;
-    transition: all .15s;
-  }
-  .pin-dot.filled { background: var(--navy); border-color: var(--navy); }
-  .pin-dot.error { background: var(--red); border-color: var(--red); animation: shake .3s ease; }
-  @keyframes shake {
-    0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)}
-  }
-  .pin-grid {
-    display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
-    margin-bottom: 10px;
-  }
-  .pin-btn {
-    width: 76px; height: 76px; border-radius: 50%;
-    border: 1.5px solid #e0e0e0; background: var(--white);
-    font-family: 'Sarabun', sans-serif; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 1px; margin: 0 auto; transition: all .1s; user-select: none;
-  }
-  .pin-btn:active { background: #f0f4ff; border-color: var(--navy); transform: scale(0.94); }
-  .pin-btn .pin-num { font-size: 22px; font-weight: 500; color: var(--navy); line-height: 1; }
-  .pin-btn .pin-sub { font-size: 9px; color: #aaa; letter-spacing: .08em; }
-  .pin-btn.del { background: transparent; border: none; }
-  .pin-btn.del svg { color: #666; }
   .empty-state { text-align: center; padding: 48px 20px; color: var(--gray-400); }
   .empty-state svg { margin-bottom: 12px; opacity: .4; }
   .empty-state p { font-size: 14px; }
@@ -630,46 +580,28 @@
 </head>
 <body>
 
-<!-- ════════════════ LOGIN SCREEN (PIN) ════════════════ -->
+<!-- ════════════════ LOGIN SCREEN ════════════════ -->
 <div id="login-screen">
-  <div class="pin-box">
-    <div class="pin-brand">
+  <div class="login-box">
+    <div class="login-brand">
       <div class="brand-icon">
-        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
       </div>
       <h1>วสันต์ปริ้นเตอร์<br>แอนด์ เซอร์วิส</h1>
       <p>ระบบออกเอกสารและใบกำกับภาษี</p>
     </div>
-
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="dot-0"></div>
-      <div class="pin-dot" id="dot-1"></div>
-      <div class="pin-dot" id="dot-2"></div>
-      <div class="pin-dot" id="dot-3"></div>
+    <div class="login-error" id="login-error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+    <div class="form-group">
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" id="login-user" placeholder="กรอกชื่อผู้ใช้" autocomplete="username">
     </div>
-
-    <div class="pin-grid">
-      <button class="pin-btn" onclick="pinPress('1')"><span class="pin-num">1</span><span class="pin-sub"></span></button>
-      <button class="pin-btn" onclick="pinPress('2')"><span class="pin-num">2</span><span class="pin-sub">ABC</span></button>
-      <button class="pin-btn" onclick="pinPress('3')"><span class="pin-num">3</span><span class="pin-sub">DEF</span></button>
-      <button class="pin-btn" onclick="pinPress('4')"><span class="pin-num">4</span><span class="pin-sub">GHI</span></button>
-      <button class="pin-btn" onclick="pinPress('5')"><span class="pin-num">5</span><span class="pin-sub">JKL</span></button>
-      <button class="pin-btn" onclick="pinPress('6')"><span class="pin-num">6</span><span class="pin-sub">MNO</span></button>
-      <button class="pin-btn" onclick="pinPress('7')"><span class="pin-num">7</span><span class="pin-sub">PQRS</span></button>
-      <button class="pin-btn" onclick="pinPress('8')"><span class="pin-num">8</span><span class="pin-sub">TUV</span></button>
-      <button class="pin-btn" onclick="pinPress('9')"><span class="pin-num">9</span><span class="pin-sub">WXYZ</span></button>
-      <div></div>
-      <button class="pin-btn" onclick="pinPress('0')"><span class="pin-num">0</span></button>
-      <button class="pin-btn del" onclick="pinDelete()">
-        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
-        </svg>
-      </button>
+    <div class="form-group">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="login-pass" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
     </div>
-
-    <div class="pin-error" id="pin-error"></div>
+    <button class="btn-login" onclick="doLogin()">เข้าสู่ระบบ</button>
   </div>
 </div>
 
@@ -1226,11 +1158,7 @@
     <div class="modal-body">
       <div class="form-group"><label>ชื่อผู้ใช้ (username)</label><input id="u-username"></div>
       <div class="form-group"><label>ชื่อ-นามสกุล</label><input id="u-name"></div>
-      <div class="form-group">
-        <label>PIN 4 หลัก</label>
-        <input type="password" id="u-pin" placeholder="กรอก PIN 4 หลัก" maxlength="4" inputmode="numeric" pattern="[0-9]*">
-        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">ปล่อยว่างถ้าไม่เปลี่ยน PIN</div>
-      </div>
+      <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="u-password" placeholder="ปล่อยว่างถ้าไม่เปลี่ยน"></div>
       <div class="form-group">
         <label>สิทธิ์</label>
         <select id="u-role">
@@ -1412,69 +1340,28 @@ function getMockData(sheet) {
 // ════════════════════════════════════════════════
 // LOGIN / LOGOUT
 // ════════════════════════════════════════════════
-// ════════════════════════════════════════════════
-// PIN LOGIN
-// ════════════════════════════════════════════════
-let _pin = '';
-
-function pinPress(num) {
-  if (_pin.length >= 4) return;
-  _pin += num;
-  updatePinDots();
-  if (_pin.length === 4) setTimeout(submitPin, 120);
-}
-
-function pinDelete() {
-  _pin = _pin.slice(0, -1);
-  updatePinDots();
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('dot-' + i);
-    dot.classList.toggle('filled', i < _pin.length);
-    dot.classList.remove('error');
-  }
-}
-
-async function submitPin() {
+async function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (!u || !p) return;
   showLoading(true);
   try {
-    const params = new URLSearchParams({ action: 'loginPin', pin: _pin });
+    const params = new URLSearchParams({ action: 'login', username: u, password: p });
     const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
     const res = await r.json();
     if (!res.success) {
-      // แสดง error + shake
-      for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById('dot-' + i);
-        dot.classList.add('error');
-      }
-      document.getElementById('pin-error').textContent = 'PIN ไม่ถูกต้อง กรุณาลองใหม่';
-      setTimeout(() => {
-        _pin = '';
-        updatePinDots();
-        document.getElementById('pin-error').textContent = '';
-      }, 800);
+      document.getElementById('login-error').style.display = 'block';
       showLoading(false); return;
     }
-    STATE.currentUser = { username: res.username, name: res.name || res.username, role: res.role };
+    STATE.currentUser = { username: u, name: res.name || u, role: res.role };
     sessionStorage.setItem('vp_user', JSON.stringify(STATE.currentUser));
     enterApp();
   } catch(e) {
-    document.getElementById('pin-error').textContent = 'ไม่สามารถเชื่อมต่อได้';
-    _pin = ''; updatePinDots();
+    showLoading(false);
+    document.getElementById('login-error').style.display = 'block';
   }
   showLoading(false);
 }
-
-// keyboard support
-document.addEventListener('keydown', e => {
-  if (document.getElementById('login-screen').style.display !== 'none') return;
-  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
-  if (e.key === 'Backspace') pinDelete();
-});
-
-async function doLogin() { submitPin(); }
 
 function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
@@ -2140,12 +2027,12 @@ function openUserModal(username='') {
     document.getElementById('u-username').value = u?.username || '';
     document.getElementById('u-name').value = u?.name || '';
     document.getElementById('u-role').value = u?.role || 'viewer';
-    document.getElementById('u-pin').value = '';
+    document.getElementById('u-password').value = '';
   } else {
     document.getElementById('u-username').value = '';
     document.getElementById('u-name').value = '';
     document.getElementById('u-role').value = 'viewer';
-    document.getElementById('u-pin').value = '';
+    document.getElementById('u-password').value = '';
   }
   openModal('user-modal');
 }
@@ -2154,21 +2041,12 @@ async function saveUser() {
   const username = document.getElementById('u-username').value.trim();
   const name     = document.getElementById('u-name').value.trim();
   const role     = document.getElementById('u-role').value;
-  const pin      = document.getElementById('u-pin').value.trim();
+  const password = document.getElementById('u-password').value;
   if (!username) { showToast('กรุณากรอกชื่อผู้ใช้', 'error'); return; }
-  if (pin && (pin.length !== 4 || !/^\d{4}$/.test(pin))) {
-    showToast('PIN ต้องเป็นตัวเลข 4 หลักเท่านั้น', 'error'); return;
-  }
   showLoading(true);
   const action = STATE.editingUserId ? 'updateUser' : 'appendUser';
-  // บันทึก user info
-  await sheetsPost(action, { username, name, role, password: pin || '', editId: STATE.editingUserId });
-  // บันทึก PIN แยก
-  if (pin) {
-    const params = new URLSearchParams({ action: 'updatePin', username, pin });
-    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
-  }
-  const row = { username, name, role };
+  await sheetsPost(action, { username, name, role, password, editId: STATE.editingUserId });
+  const row = { username, name, role, password: password || '***' };
   if (STATE.editingUserId) {
     const idx = STATE.users.findIndex(u => u.username === STATE.editingUserId);
     if (idx > -1) STATE.users[idx] = row;
