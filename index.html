@@ -468,6 +468,8 @@
     .sidebar { display: none; }
     .main { margin-left: 0; padding: 12px; padding-bottom: 80px; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-card { padding: 12px 14px; }
+    .stat-value { font-size: 20px; }
 
     /* แถบบนแสดงชื่อร้าน + user */
     .mobile-topbar {
@@ -489,22 +491,81 @@
       overflow-x: auto;
     }
     .bottom-nav .bn-item {
-      flex: 1; min-width: 64px; display: flex; flex-direction: column;
+      flex: 1; min-width: 56px; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 3px;
-      padding: 8px 4px; color: rgba(255,255,255,0.6);
+      padding: 7px 4px; color: rgba(255,255,255,0.6);
       border: none; background: none; cursor: pointer;
-      font-family: 'Sarabun', sans-serif; font-size: 10px; font-weight: 600;
+      font-family: 'Sarabun', sans-serif; font-size: 9px; font-weight: 600;
     }
     .bottom-nav .bn-item.active { color: var(--gold-light); }
-    .bottom-nav .bn-item svg { width: 20px; height: 20px; }
+    .bottom-nav .bn-item svg { width: 18px; height: 18px; }
 
-    /* ตารางบนมือถือ: badge ไม่ตัดคำ, ตัวอักษรเล็กลง */
-    table { font-size: 12px; }
-    th { padding: 8px 8px; font-size: 10px; }
-    td { padding: 9px 8px; }
-    .badge { white-space: nowrap; font-size: 10.5px; padding: 3px 8px; }
-    .search-bar { flex-wrap: wrap; }
+    /* ─── TABLE responsive ─── */
+    table { font-size: 12px; width: 100%; }
+    th { padding: 7px 6px; font-size: 10px; }
+    td { padding: 8px 6px; }
+    .badge { white-space: nowrap; font-size: 10px; padding: 2px 7px; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ─── SEARCH BAR ─── */
+    .search-bar { flex-wrap: wrap; gap: 8px; }
     .search-input-wrap { max-width: 100%; flex: 1 1 100%; }
+    .filter-select { width: 100%; }
+
+    /* ─── FORM responsive ─── */
+    .form-row { grid-template-columns: 1fr !important; gap: 10px; }
+    .form-group input, .form-group select, .form-group textarea {
+      font-size: 16px; /* ป้องกัน iOS zoom */
+      padding: 10px 12px;
+    }
+    .form-group label { font-size: 12px; }
+
+    /* ─── MODAL responsive ─── */
+    .modal {
+      width: 100vw !important; max-width: 100vw !important;
+      max-height: 92vh; border-radius: 16px 16px 0 0;
+      margin-top: auto;
+    }
+    .modal-overlay { align-items: flex-end; }
+    .modal-body { padding: 16px; }
+    .modal-header { padding: 14px 16px; }
+    .modal-footer { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .modal-footer .btn { flex: 1; min-width: 80px; justify-content: center; }
+
+    /* ─── ITEMS TABLE in form ─── */
+    .items-table { font-size: 12px; }
+    .items-table th { padding: 6px 4px; font-size: 10px; }
+    .items-table td input { padding: 6px 4px; font-size: 12px; }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .page-header .btn { width: 100%; justify-content: center; }
+
+    /* ─── TOTALS BOX ─── */
+    .totals-box { font-size: 13px; padding: 12px; }
+    .totals-box .grand { font-size: 15px; }
+
+    /* ─── DOC SHEET preview on mobile ─── */
+    .doc-sheet {
+      width: 100%; min-height: unset;
+      padding: 14px; font-size: 11px;
+    }
+    .doc-header-row { flex-direction: column; gap: 10px; }
+    .doc-meta { text-align: left; }
+    .doc-parties { grid-template-columns: 1fr; gap: 10px; }
+    .doc-sigs { grid-template-columns: 1fr; gap: 20px; }
+    .doc-items-table th, .doc-items-table td { padding: 5px 4px; font-size: 10px; }
+    .doc-totals { width: 100%; margin-left: 0; }
+
+    /* ─── SETTINGS ─── */
+    .settings-grid { grid-template-columns: 1fr; }
+
+    /* ─── BUTTON groups ─── */
+    .btn-sm { padding: 7px 10px; font-size: 12px; }
+    .search-bar .btn { white-space: nowrap; }
+
+    /* ─── CUSTOMERS TABLE ─── */
+    #customers-table td:nth-child(3) { display: none; } /* ซ่อนที่อยู่บนจอเล็ก */
   }
 
   @media print {
@@ -573,6 +634,38 @@
   .confirm-dialog p { font-size: 14px; color: var(--gray-600); margin-bottom: 22px; }
   .confirm-btns { display: flex; gap: 10px; justify-content: center; }
 
+  /* ─── LOGIN ─────────────────────────────── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a2744 0%, #243560 60%, #2d4a8a 100%);
+  }
+  .login-box {
+    background: var(--white); border-radius: var(--radius-lg);
+    padding: 48px 44px 40px; width: 380px; max-width: 95vw;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-brand { text-align: center; margin-bottom: 32px; }
+  .login-brand .brand-icon {
+    width: 64px; height: 64px; background: #1a2744;
+    border-radius: 16px; display: inline-flex;
+    align-items: center; justify-content: center; margin-bottom: 14px;
+  }
+  .login-brand .brand-icon svg { color: var(--gold); }
+  .login-brand h1 { font-size: 18px; font-weight: 700; color: var(--navy); line-height: 1.3; }
+  .login-brand p { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
+  .login-error {
+    background: #fef2f2; border: 1px solid #fca5a5; color: var(--red);
+    padding: 10px 14px; border-radius: var(--radius); font-size: 13px;
+    margin-bottom: 16px; display: none;
+  }
+  .btn-login {
+    width: 100%; padding: 12px; background: var(--navy); color: var(--white);
+    border: none; border-radius: var(--radius); font-family: 'Sarabun', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s;
+    margin-top: 8px;
+  }
+  .btn-login:hover { background: var(--navy-mid); }
   .empty-state { text-align: center; padding: 48px 20px; color: var(--gray-400); }
   .empty-state svg { margin-bottom: 12px; opacity: .4; }
   .empty-state p { font-size: 14px; }
@@ -665,6 +758,14 @@
       <button class="nav-item" onclick="showPage('report')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         สรุปรายงาน
+      </button>
+      <button class="nav-item" onclick="showPage('customers')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>
+        รายชื่อลูกค้า
+      </button>
+      <button class="nav-item" onclick="showPage('drafts')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        ฉบับร่าง <span id="draft-badge" style="display:none;background:#e53935;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px">0</span>
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -963,6 +1064,48 @@
       <div id="report-print-area" style="display:none"></div>
     </div>
 
+    <!-- ══ CUSTOMERS PAGE ══ -->
+    <div class="page" id="page-customers">
+      <div class="page-header">
+        <div><h1>รายชื่อลูกค้า</h1><p id="customers-count"></p></div>
+        <button class="btn btn-primary" onclick="openCustomerModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+          เพิ่มลูกค้าใหม่
+        </button>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="ค้นหาชื่อ / เลขภาษี / เบอร์..." id="customer-search-q" oninput="renderCustomersTable()">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadCustomers()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          รีเฟรช
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap" id="customers-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DRAFTS PAGE ══ -->
+    <div class="page" id="page-drafts">
+      <div class="page-header">
+        <div><h1>ฉบับร่าง</h1><p id="drafts-count"></p></div>
+        <button class="btn btn-outline btn-sm" onclick="loadDrafts()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          รีเฟรช
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap" id="drafts-table"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Bottom navigation (mobile only, shown via CSS) -->
@@ -990,6 +1133,14 @@
     <button class="bn-item" onclick="showPage('report')" data-page="report">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
       รายงาน
+    </button>
+    <button class="bn-item" onclick="showPage('customers')" data-page="customers">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      ลูกค้า
+    </button>
+    <button class="bn-item" onclick="showPage('drafts')" data-page="drafts">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      ร่าง
     </button>
   </nav>
 </div>
@@ -1112,6 +1263,10 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('doc-modal')">ยกเลิก</button>
+      <button class="btn btn-outline" onclick="saveDraft()" style="border-color:#f57c00;color:#f57c00">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        บันทึกร่าง
+      </button>
       <button class="btn btn-gold" onclick="previewDoc()">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview
@@ -1158,7 +1313,11 @@
     <div class="modal-body">
       <div class="form-group"><label>ชื่อผู้ใช้ (username)</label><input id="u-username"></div>
       <div class="form-group"><label>ชื่อ-นามสกุล</label><input id="u-name"></div>
-      <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="u-password" placeholder="ปล่อยว่างถ้าไม่เปลี่ยน"></div>
+      <div class="form-group">
+        <label>PIN 4 หลัก</label>
+        <input type="password" id="u-pin" placeholder="กรอก PIN 4 หลัก" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">ปล่อยว่างถ้าไม่เปลี่ยน PIN</div>
+      </div>
       <div class="form-group">
         <label>สิทธิ์</label>
         <select id="u-role">
@@ -1203,6 +1362,34 @@
   </div>
 </div>
 
+<!-- Customer Modal -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <h2 id="customer-modal-title">เพิ่มลูกค้าใหม่</h2>
+      <button class="modal-close" onclick="closeModal('customer-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>ชื่อลูกค้า / หน่วยงาน *</label><input id="cm-name" placeholder="ชื่อลูกค้า"></div>
+        <div class="form-group"><label>เลขที่เสียภาษี</label><input id="cm-taxid" placeholder="เลขที่เสียภาษี"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>ที่อยู่บรรทัด 1</label><input id="cm-addr1"></div>
+        <div class="form-group"><label>ที่อยู่บรรทัด 2</label><input id="cm-addr2"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>เบอร์โทรศัพท์</label><input id="cm-tel"></div>
+        <div class="form-group"><label>อีเมล</label><input id="cm-email"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('customer-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -1232,14 +1419,9 @@ const CONFIG = {
 // ════════════════════════════════════════════════
 let STATE = {
   currentUser: null,
-  docs: [],
-  items: [],
-  users: [],
-  logs: [],
-  settings: {},
-  editingDocId: null,
-  editingUserId: null,
-  confirmCallback: null,
+  docs: [], items: [], users: [], logs: [], settings: {},
+  drafts: [],
+  editingDocId: null, editingUserId: null, confirmCallback: null,
 };
 
 // ════════════════════════════════════════════════
@@ -1340,6 +1522,8 @@ function getMockData(sheet) {
 // ════════════════════════════════════════════════
 // LOGIN / LOGOUT
 // ════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════
 async function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value.trim();
@@ -1405,20 +1589,25 @@ async function doLogout() {
 async function loadFromSheets() {
   showLoading(true);
   try {
-    const [docs, items, users, logs] = await Promise.all([
+    const [docs, items, users, logs, draftsData] = await Promise.all([
       sheetsGet(CONFIG.SHEET_DOCS),
       sheetsGet(CONFIG.SHEET_ITEMS),
       sheetsGet(CONFIG.SHEET_USERS),
       sheetsGet(CONFIG.SHEET_LOGS),
+      sheetsGet('ฉบับร่าง'),
     ]);
-    STATE.docs  = docs;
-    STATE.items = items;
-    STATE.users = users;
-    STATE.logs  = logs;
+    STATE.docs   = docs;
+    STATE.items  = items;
+    STATE.users  = users;
+    STATE.logs   = logs;
+    STATE.drafts = draftsData;
     renderDashboard();
     renderDocsTable();
     renderUsersTable();
     renderLogsTable();
+    renderCustomersTable();
+    renderDraftsTable();
+    updateDraftBadge();
   } catch(e) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
   showLoading(false);
 }
@@ -1439,7 +1628,7 @@ function showPage(name) {
   document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name)?.classList.add('active');
   // highlight nav
-  const navMap = { dashboard:0, docs:1, settings:8, users:9, logs:10, report:11 };
+  const navMap = { dashboard:0, docs:1, settings:8, users:9, logs:10, report:11, customers:12, drafts:13 };
   document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
   document.querySelector(`.bn-item[data-page="${name}"]`)?.classList.add('active');
   // scroll to top on page change (helps mobile)
@@ -2027,12 +2216,12 @@ function openUserModal(username='') {
     document.getElementById('u-username').value = u?.username || '';
     document.getElementById('u-name').value = u?.name || '';
     document.getElementById('u-role').value = u?.role || 'viewer';
-    document.getElementById('u-password').value = '';
+    document.getElementById('u-pin').value = '';
   } else {
     document.getElementById('u-username').value = '';
     document.getElementById('u-name').value = '';
     document.getElementById('u-role').value = 'viewer';
-    document.getElementById('u-password').value = '';
+    document.getElementById('u-pin').value = '';
   }
   openModal('user-modal');
 }
@@ -2041,12 +2230,21 @@ async function saveUser() {
   const username = document.getElementById('u-username').value.trim();
   const name     = document.getElementById('u-name').value.trim();
   const role     = document.getElementById('u-role').value;
-  const password = document.getElementById('u-password').value;
+  const pin      = document.getElementById('u-pin').value.trim();
   if (!username) { showToast('กรุณากรอกชื่อผู้ใช้', 'error'); return; }
+  if (pin && (pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+    showToast('PIN ต้องเป็นตัวเลข 4 หลักเท่านั้น', 'error'); return;
+  }
   showLoading(true);
   const action = STATE.editingUserId ? 'updateUser' : 'appendUser';
-  await sheetsPost(action, { username, name, role, password, editId: STATE.editingUserId });
-  const row = { username, name, role, password: password || '***' };
+  // บันทึก user info
+  await sheetsPost(action, { username, name, role, password: pin || '', editId: STATE.editingUserId });
+  // บันทึก PIN แยก
+  if (pin) {
+    const params = new URLSearchParams({ action: 'updatePin', username, pin });
+    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+  }
+  const row = { username, name, role };
   if (STATE.editingUserId) {
     const idx = STATE.users.findIndex(u => u.username === STATE.editingUserId);
     if (idx > -1) STATE.users[idx] = row;
@@ -2634,6 +2832,267 @@ function doConvertDoc(fromDocNo, toType) {
   recalcTotals();
   openModal('doc-modal');
   showToast(`คัดลอกข้อมูลจาก ${fromDocNo} แล้ว ✓`, 'success');
+}
+
+// ════════════════════════════════════════════════
+// CUSTOMERS
+// ════════════════════════════════════════════════
+function getUniqueCustomerList() {
+  const seen = new Map();
+  STATE.docs.forEach(d => {
+    const name = (d.ชื่อลูกค้า || '').trim();
+    if (name && !seen.has(name)) {
+      seen.set(name, {
+        name,
+        addr1:  d.ที่อยู่ลูกค้า1 || '',
+        addr2:  d.ที่อยู่ลูกค้า2 || '',
+        taxid:  d.เลขที่เสียภาษีลูกค้า || '',
+        tel:    d.เบอร์โทรศัพท์ลูกค้า || '',
+        email:  d.อีเมล์ลูกค้า || '',
+        docCount: STATE.docs.filter(x => x.ชื่อลูกค้า === name).length,
+      });
+    }
+  });
+  return Array.from(seen.values()).sort((a,b) => a.name.localeCompare(b.name,'th'));
+}
+
+function loadCustomers() {
+  renderCustomersTable();
+}
+
+function renderCustomersTable() {
+  const q = (document.getElementById('customer-search-q')?.value || '').toLowerCase();
+  const customers = getUniqueCustomerList().filter(c =>
+    !q || c.name.toLowerCase().includes(q) ||
+    c.taxid.includes(q) || c.tel.includes(q)
+  );
+  document.getElementById('customers-count').textContent = `พบ ${customers.length} ราย`;
+  if (!customers.length) {
+    document.getElementById('customers-table').innerHTML = '<div class="empty-state"><p>ไม่พบลูกค้า</p></div>';
+    return;
+  }
+  const rows = customers.map((c,i) => `<tr>
+    <td>${i+1}</td>
+    <td><strong>${escHtml(c.name)}</strong></td>
+    <td style="font-size:12px;color:var(--gray-600)">${escHtml(c.addr1)}${c.addr2?' '+escHtml(c.addr2):''}</td>
+    <td>${escHtml(c.taxid)}</td>
+    <td>${escHtml(c.tel)}</td>
+    <td><span class="badge badge-qt">${c.docCount} ใบ</span></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-sm" onclick="openCustomerModal(${i})">แก้ไข</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:4px" onclick="useCustomerInDoc(${i})">
+        + สร้างเอกสาร
+      </button>
+    </td>
+  </tr>`).join('');
+  document.getElementById('customers-table').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>ชื่อ</th><th>ที่อยู่</th><th>เลขภาษี</th><th>เบอร์โทร</th><th>เอกสาร</th><th>การดำเนินการ</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  // เก็บ customers list ไว้ใช้
+  document.getElementById('customers-table')._list = customers;
+}
+
+let _editingCustomerIdx = null;
+
+function openCustomerModal(idx = null) {
+  _editingCustomerIdx = idx;
+  document.getElementById('customer-modal-title').textContent = idx !== null ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้าใหม่';
+  if (idx !== null) {
+    const c = document.getElementById('customers-table')?._list?.[idx];
+    if (c) {
+      document.getElementById('cm-name').value  = c.name;
+      document.getElementById('cm-taxid').value = c.taxid;
+      document.getElementById('cm-addr1').value = c.addr1;
+      document.getElementById('cm-addr2').value = c.addr2;
+      document.getElementById('cm-tel').value   = c.tel;
+      document.getElementById('cm-email').value = c.email;
+    }
+  } else {
+    ['cm-name','cm-taxid','cm-addr1','cm-addr2','cm-tel','cm-email'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+  openModal('customer-modal');
+}
+
+async function saveCustomer() {
+  const name  = document.getElementById('cm-name').value.trim();
+  if (!name) { showToast('กรุณากรอกชื่อลูกค้า', 'error'); return; }
+  const taxid = document.getElementById('cm-taxid').value.trim();
+  const addr1 = document.getElementById('cm-addr1').value.trim();
+  const addr2 = document.getElementById('cm-addr2').value.trim();
+  const tel   = document.getElementById('cm-tel').value.trim();
+  const email = document.getElementById('cm-email').value.trim();
+  showLoading(true);
+  try {
+    // อัพเดทใน sheet เอกสาร — ทุกแถวที่ชื่อตรง
+    const oldName = _editingCustomerIdx !== null ?
+      document.getElementById('customers-table')?._list?.[_editingCustomerIdx]?.name : name;
+    const params = new URLSearchParams({
+      action: 'updateCustomer', oldName, name, taxid, addr1, addr2, tel, email
+    });
+    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    // อัพเดท local state
+    STATE.docs.forEach(d => {
+      if (d.ชื่อลูกค้า === oldName) {
+        d.ชื่อลูกค้า = name;
+        d.เลขที่เสียภาษีลูกค้า = taxid;
+        d.ที่อยู่ลูกค้า1 = addr1;
+        d.ที่อยู่ลูกค้า2 = addr2;
+        d.เบอร์โทรศัพท์ลูกค้า = tel;
+        d.อีเมล์ลูกค้า = email;
+      }
+    });
+    renderCustomersTable();
+    closeModal('customer-modal');
+    showToast('บันทึกข้อมูลลูกค้าแล้ว ✓', 'success');
+  } catch(e) { showToast('บันทึกไม่สำเร็จ', 'error'); }
+  showLoading(false);
+}
+
+function useCustomerInDoc(idx) {
+  const c = document.getElementById('customers-table')?._list?.[idx];
+  if (!c) return;
+  openNewDocModal();
+  document.getElementById('f-cname').value  = c.name;
+  document.getElementById('f-ctaxid').value = c.taxid;
+  document.getElementById('f-caddr1').value = c.addr1;
+  document.getElementById('f-caddr2').value = c.addr2;
+  document.getElementById('f-ctel').value   = c.tel;
+  document.getElementById('f-cemail').value = c.email;
+}
+
+// ════════════════════════════════════════════════
+// DRAFTS (ฉบับร่าง)
+// ════════════════════════════════════════════════
+async function loadDrafts() {
+  showLoading(true);
+  try {
+    const params = new URLSearchParams({ action: 'getSheet', sheet: 'ฉบับร่าง' });
+    const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    const data = await r.json();
+    if (data.success && data.data && data.data.length > 1) {
+      const headers = data.data[0];
+      STATE.drafts = data.data.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((h,i) => { obj[h] = row[i] || ''; });
+        return obj;
+      });
+    } else {
+      STATE.drafts = [];
+    }
+    renderDraftsTable();
+    updateDraftBadge();
+  } catch(e) { showToast('โหลดร่างไม่สำเร็จ', 'error'); }
+  showLoading(false);
+}
+
+function updateDraftBadge() {
+  const badge = document.getElementById('draft-badge');
+  if (!badge) return;
+  const count = STATE.drafts?.length || 0;
+  badge.style.display = count > 0 ? 'inline' : 'none';
+  badge.textContent = count;
+}
+
+function renderDraftsTable() {
+  const drafts = STATE.drafts || [];
+  document.getElementById('drafts-count').textContent = `${drafts.length} ฉบับ`;
+  if (!drafts.length) {
+    document.getElementById('drafts-table').innerHTML = '<div class="empty-state"><p>ไม่มีฉบับร่าง</p></div>';
+    return;
+  }
+  const rows = drafts.map((d,i) => `<tr>
+    <td><strong>${escHtml(d.ชื่อร่าง||'ไม่มีชื่อ')}</strong></td>
+    <td><span class="badge badge-qt">${escHtml(d.ประเภทเอกสาร||'')}</span></td>
+    <td>${escHtml(d.ชื่อลูกค้า||'')}</td>
+    <td style="white-space:nowrap;font-size:12px">${formatThaiDate(d.วันที่บันทึก)}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-sm" onclick="openDraft(${i})">เปิดร่าง</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteDraft(${i})">ลบ</button>
+    </td>
+  </tr>`).join('');
+  document.getElementById('drafts-table').innerHTML = `
+    <table>
+      <thead><tr><th>ชื่อร่าง</th><th>ประเภท</th><th>ลูกค้า</th><th>บันทึกล่าสุด</th><th>การดำเนินการ</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function saveDraft() {
+  const data = getFormData();
+  const draftName = data.cname
+    ? `${data.type} - ${data.cname}`
+    : `${data.type} - ร่าง`;
+  showLoading(true);
+  try {
+    const payload = JSON.stringify({
+      action: 'saveDraft',
+      draft: {
+        ชื่อร่าง: draftName,
+        ประเภทเอกสาร: data.type,
+        ชื่อลูกค้า: data.cname,
+        วันที่บันทึก: new Date().toISOString().split('T')[0],
+        data: JSON.stringify(data),
+      }
+    });
+    const r = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload,
+    });
+    closeModal('doc-modal');
+    await loadDrafts();
+    showToast('บันทึกร่างแล้ว ✓', 'success');
+  } catch(e) { showToast('บันทึกร่างไม่สำเร็จ', 'error'); }
+  showLoading(false);
+}
+
+function openDraft(idx) {
+  const draft = STATE.drafts?.[idx];
+  if (!draft) return;
+  try {
+    const data = JSON.parse(draft.data);
+    // เปิดฟอร์มพร้อมข้อมูลร่าง
+    STATE.editingDocId = null;
+    document.getElementById('doc-modal-title').textContent = `ร่าง: ${draft.ชื่อร่าง}`;
+    document.getElementById('f-type').value    = data.type || 'ใบเสนอราคา';
+    document.getElementById('f-date').value    = data.date || '';
+    document.getElementById('f-valid').value   = data.valid || '';
+    document.getElementById('f-ref').value     = data.ref || '';
+    document.getElementById('f-cname').value   = data.cname || '';
+    document.getElementById('f-ctaxid').value  = data.ctaxid || '';
+    document.getElementById('f-caddr1').value  = data.caddr1 || '';
+    document.getElementById('f-caddr2').value  = data.caddr2 || '';
+    document.getElementById('f-ctel').value    = data.ctel || '';
+    document.getElementById('f-cemail').value  = data.cemail || '';
+    document.getElementById('f-discount').value = data.discount || '0';
+    document.getElementById('f-remark').value  = data.remark || '';
+    document.getElementById('f-keyword').value = data.keyword || '';
+    onDocTypeChange();
+    document.getElementById('items-body').innerHTML = '';
+    (data.items||[]).forEach(it => addItemRow(it.name, it.qty, it.price));
+    if (!data.items?.length) { addItemRow(); addItemRow(); }
+    recalcTotals();
+    openModal('doc-modal');
+  } catch(e) { showToast('เปิดร่างไม่สำเร็จ', 'error'); }
+}
+
+async function deleteDraft(idx) {
+  const draft = STATE.drafts?.[idx];
+  if (!draft) return;
+  showLoading(true);
+  try {
+    const params = new URLSearchParams({ action: 'deleteDraft', draftName: draft.ชื่อร่าง, date: draft.วันที่บันทึก });
+    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    STATE.drafts.splice(idx, 1);
+    renderDraftsTable();
+    updateDraftBadge();
+    showToast('ลบร่างแล้ว', 'success');
+  } catch(e) { showToast('ลบร่างไม่สำเร็จ', 'error'); }
+  showLoading(false);
 }
 
 // Close modal on overlay click
