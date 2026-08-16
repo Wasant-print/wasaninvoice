@@ -842,9 +842,9 @@
       <div class="search-bar">
         <div class="search-input-wrap">
           <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="ค้นหาเลขที่ / ชื่อลูกค้า..." id="search-q" oninput="renderDocsTable()">
+          <input type="text" placeholder="ค้นหาเลขที่ / ชื่อลูกค้า..." id="search-q" oninput="onDocsFilterChanged()">
         </div>
-        <select class="filter-select" id="filter-type" onchange="renderDocsTable()">
+        <select class="filter-select" id="filter-type" onchange="onDocsFilterChanged()">
           <option value="">ทุกประเภท</option>
           <option value="ใบเสนอราคา">ใบเสนอราคา</option>
           <option value="ใบส่งของ">ใบส่งของ</option>
@@ -1076,7 +1076,7 @@
       <div class="search-bar">
         <div class="search-input-wrap">
           <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="ค้นหาชื่อ / เลขภาษี / เบอร์..." id="customer-search-q" oninput="renderCustomersTable()">
+          <input type="text" placeholder="ค้นหาชื่อ / เลขภาษี / เบอร์..." id="customer-search-q" oninput="onCustomersFilterChanged()">
         </div>
         <button class="btn btn-outline btn-sm" onclick="loadCustomers()">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -1422,7 +1422,26 @@ let STATE = {
   docs: [], items: [], users: [], logs: [], settings: {},
   drafts: [],
   editingDocId: null, editingUserId: null, confirmCallback: null,
+  // เลขหน้าปัจจุบันของแต่ละตาราง (สำหรับแบ่งหน้าข้อมูลที่มีจำนวนมาก)
+  docsPage: 1, customersPage: 1, logsPage: 1,
 };
+
+// ════════════════════════════════════════════════
+// PAGINATION HELPERS — แบ่งหน้าข้อมูลตารางเพื่อไม่ให้หน้าเว็บหน่วง
+// เมื่อจำนวนเอกสาร/ลูกค้า/ประวัติการเข้าใช้ มีจำนวนมาก (หลักร้อย-พัน)
+// ════════════════════════════════════════════════
+const DOCS_PAGE_SIZE = 20;
+const CUSTOMERS_PAGE_SIZE = 20;
+const LOGS_PAGE_SIZE = 30;
+
+function buildPagerHTML(page, totalPages, gotoFn) {
+  if (totalPages <= 1) return '';
+  return `<div style="display:flex;justify-content:center;align-items:center;gap:12px;padding:14px;border-top:1px solid var(--gray-100)">
+    <button class="btn btn-outline btn-sm" ${page<=1?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="${gotoFn}(${page-1})">‹ ก่อนหน้า</button>
+    <span style="font-size:13px;color:var(--gray-600)">หน้า ${page} / ${totalPages}</span>
+    <button class="btn btn-outline btn-sm" ${page>=totalPages?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="${gotoFn}(${page+1})">ถัดไป ›</button>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 // INIT
@@ -1491,6 +1510,24 @@ async function sheetsPost(action, payload) {
   return r.json();
 }
 
+// สำหรับคำขอที่มีข้อมูลอ่อนไหว (รหัสผ่าน/PIN) ให้ส่งแบบ POST body แทนการต่อเป็น query string บน URL
+// เพราะ query string จะถูกบันทึกไว้ใน browser history และ log ฝั่งเซิร์ฟเวอร์ได้ง่ายกว่า
+async function postSecure(action, payload) {
+  if (CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+    return { success: true };
+  }
+  try {
+    const r = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, ...payload }),
+    });
+    return await r.json();
+  } catch(e) {
+    return { success: false };
+  }
+}
+
 // ════════════════════════════════════════════════
 // MOCK DATA (Demo mode when no config)
 // ════════════════════════════════════════════════
@@ -1501,9 +1538,9 @@ function getMockData(sheet) {
       { username:'staff', password:'staff1234', role:'viewer', name:'เจ้าหน้าที่' },
     ],
     [CONFIG.SHEET_DOCS]: [
-      { เลขที่เอกสาร:'QT26050003', ประเภทเอกสาร:'ใบเสนอราคา', วันที่สร้าง:'2569-06-11', ชื่อลูกค้า:'โรงพยาบาลส่งเสริมสุขภาพตำบลเหมืองผ่า', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'มี VAT', ที่อยู่ลูกค้า1:'หมู่ 1 ต.ขี้เหล็ก อ.แม่แตง จ.เชียงใหม่ 50150', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'0994001041750', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'โรงพยาบาลเหมืองผ่า' },
-      { เลขที่เอกสาร:'TV26050001', ประเภทเอกสาร:'ใบกำกับภาษี', วันที่สร้าง:'2569-05-12', ชื่อลูกค้า:'กองพันสัตว์ต่าง กรมการสัตว์ทหารบก', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'มี VAT', ที่อยู่ลูกค้า1:'เลขที่ 103 หมู่ 2 ตำบลดอนแก้ว อำเภอแม่ริม', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'กองพันสัตว์ต่าง' },
-      { เลขที่เอกสาร:'QT26050002', ประเภทเอกสาร:'ใบเสนอราคา', วันที่สร้าง:'2569-05-05', ชื่อลูกค้า:'โรงเรียนบ้านบวกหมื้อ', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'ไม่มี VAT', ที่อยู่ลูกค้า1:'หมู่ 1 ต.ขี้เหล็ก อ.แม่แตง จ.เชียงใหม่ 50150', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'โรงเรียนบ้านบวกหมื้อ' },
+      { เลขที่เอกสาร:'QT26050003', ประเภทเอกสาร:'ใบเสนอราคา', วันที่สร้าง:'2026-06-11', ชื่อลูกค้า:'โรงพยาบาลส่งเสริมสุขภาพตำบลเหมืองผ่า', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'มี VAT', ที่อยู่ลูกค้า1:'หมู่ 1 ต.ขี้เหล็ก อ.แม่แตง จ.เชียงใหม่ 50150', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'0994001041750', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'โรงพยาบาลเหมืองผ่า' },
+      { เลขที่เอกสาร:'TV26050001', ประเภทเอกสาร:'ใบกำกับภาษี', วันที่สร้าง:'2026-05-12', ชื่อลูกค้า:'กองพันสัตว์ต่าง กรมการสัตว์ทหารบก', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'มี VAT', ที่อยู่ลูกค้า1:'เลขที่ 103 หมู่ 2 ตำบลดอนแก้ว อำเภอแม่ริม', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'กองพันสัตว์ต่าง' },
+      { เลขที่เอกสาร:'QT26050002', ประเภทเอกสาร:'ใบเสนอราคา', วันที่สร้าง:'2026-05-05', ชื่อลูกค้า:'โรงเรียนบ้านบวกหมื้อ', เบอร์โทรศัพท์ลูกค้า:'', ส่วนลด:'0', 'มี VAT ?':'ไม่มี VAT', ที่อยู่ลูกค้า1:'หมู่ 1 ต.ขี้เหล็ก อ.แม่แตง จ.เชียงใหม่ 50150', ที่อยู่ลูกค้า2:'', เลขที่เสียภาษีลูกค้า:'', อีเมล์ลูกค้า:'', หมายเหตุ:'', คำค้น:'โรงเรียนบ้านบวกหมื้อ' },
     ],
     [CONFIG.SHEET_ITEMS]: [
       { เลขที่เอกสาร:'QT26050003', 'สินค้า / บริการ':'หมึกพิมพ์ brother Laser TN-269 (BK)', จำนวน:'1', ราคาต่อหน่วย:'500' },
@@ -1530,9 +1567,8 @@ async function doLogin() {
   if (!u || !p) return;
   showLoading(true);
   try {
-    const params = new URLSearchParams({ action: 'login', username: u, password: p });
-    const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
-    const res = await r.json();
+    // ส่ง username/password แบบ POST body แทน GET เพื่อไม่ให้รหัสผ่านหลุดไปอยู่ใน URL
+    const res = await postSecure('login', { username: u, password: p });
     if (!res.success) {
       document.getElementById('login-error').style.display = 'block';
       showLoading(false); return;
@@ -1601,6 +1637,10 @@ async function loadFromSheets() {
     STATE.users  = users;
     STATE.logs   = logs;
     STATE.drafts = draftsData;
+    // รีเฟรชข้อมูลทั้งชุด → กลับไปหน้า 1 ของทุกตารางที่มีการแบ่งหน้า
+    STATE.docsPage = 1;
+    STATE.customersPage = 1;
+    STATE.logsPage = 1;
     renderDashboard();
     renderDocsTable();
     renderUsersTable();
@@ -1615,6 +1655,7 @@ async function loadFromSheets() {
 async function loadLogs() {
   showLoading(true);
   STATE.logs = await sheetsGet(CONFIG.SHEET_LOGS);
+  STATE.logsPage = 1;
   renderLogsTable();
   showLoading(false);
 }
@@ -1628,7 +1669,7 @@ function showPage(name) {
   document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name)?.classList.add('active');
   // highlight nav
-  const navMap = { dashboard:0, docs:1, settings:8, users:9, logs:10, report:11, customers:12, drafts:13 };
+  const navMap = { dashboard:0, docs:1, settings:7, users:8, logs:9, report:10, customers:11, drafts:12 };
   document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
   document.querySelector(`.bn-item[data-page="${name}"]`)?.classList.add('active');
   // scroll to top on page change (helps mobile)
@@ -1637,6 +1678,19 @@ function showPage(name) {
 
 function filterDocType(type) {
   document.getElementById('filter-type').value = type;
+  STATE.docsPage = 1;
+  renderDocsTable();
+}
+
+// เรียกเมื่อผู้ใช้พิมพ์ค้นหา/เปลี่ยนตัวกรองประเภทเอกสาร — ต้องรีเซ็ตกลับไปหน้า 1 เสมอ
+// ไม่เช่นนั้นถ้ากำลังอยู่หน้า 3 แล้วค้นหาใหม่จนเหลือ 1 หน้า จะเห็นตารางว่างเปล่า
+function onDocsFilterChanged() {
+  STATE.docsPage = 1;
+  renderDocsTable();
+}
+
+function goToDocsPage(p) {
+  STATE.docsPage = p;
   renderDocsTable();
 }
 
@@ -1673,41 +1727,14 @@ function renderDocsTable() {
     return matchQ && matchType;
   });
   document.getElementById('docs-count').textContent = `พบ ${filtered.length} รายการ`;
-  document.getElementById('docs-table').innerHTML = buildDocsTableHTML(filtered, false);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / DOCS_PAGE_SIZE));
+  STATE.docsPage = Math.min(Math.max(1, STATE.docsPage || 1), totalPages);
+  const start = (STATE.docsPage - 1) * DOCS_PAGE_SIZE;
+  const pageItems = filtered.slice(start, start + DOCS_PAGE_SIZE);
+  document.getElementById('docs-table').innerHTML =
+    buildDocsTableHTML(pageItems, false) + buildPagerHTML(STATE.docsPage, totalPages, 'goToDocsPage');
 }
 
-function buildDocsTableHTML(docs, mini) {
-  if (!docs.length) return `<div class="empty-state"><p>ไม่พบเอกสาร</p></div>`;
-  const isAdmin = STATE.currentUser?.role === 'admin';
-  const badgeMap = {
-    'ใบเสนอราคา':'badge-qt','ใบส่งของ':'badge-do',
-    'ใบแจ้งหนี้':'badge-iv','ใบกำกับภาษี':'badge-tv','ใบเสร็จรับเงิน':'badge-rt',
-  };
-  return `<table>
-    <thead><tr>
-      <th>เลขที่</th><th>ประเภท</th><th>วันที่</th><th>ลูกค้า</th>
-      ${mini?'':'<th>VAT</th>'}
-      <th>การดำเนินการ</th>
-    </tr></thead>
-    <tbody>${docs.map(d => `<tr>
-      <td><strong>${d.เลขที่เอกสาร||''}</strong></td>
-      <td><span class="badge ${badgeMap[d.ประเภทเอกสาร]||''}">${d.ประเภทเอกสาร||''}</span></td>
-      <td>${formatThaiDate(d.วันที่สร้าง)}</td>
-      <td>${d.ชื่อลูกค้า||''}</td>
-      ${mini?'':'<td>${d["มี VAT ?"]||""}</td>'}
-      <td>
-        <button class="btn btn-outline btn-sm" onclick='previewExistingDoc("${d.เลขที่เอกสาร}")'>
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          ดู
-        </button>
-        ${isAdmin ? `<button class="btn btn-outline btn-sm" style="margin-left:4px" onclick='editDoc("${d.เลขที่เอกสาร}")'>แก้ไข</button>
-        <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick='confirmDelete("${d.เลขที่เอกสาร}")'>ลบ</button>` : ''}
-      </td>
-    </tr>`).join('')}</tbody>
-  </table>`.replace(/\${d\["มี VAT \?"\]\|\|""}/g, (_, offset, str) => d?.["มี VAT ?"] || "");
-}
-
-// Rebuild properly
 function buildDocsTableHTML(docs, mini) {
   if (!docs.length) return `<div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>ไม่พบเอกสาร</p></div>`;
   const isAdmin = STATE.currentUser?.role === 'admin';
@@ -1762,8 +1789,18 @@ function generateDocNo(type) {
   const now = new Date();
   const buddYear = (now.getFullYear()+543).toString().slice(-2);
   const month = String(now.getMonth()+1).padStart(2,'0');
-  const same = STATE.docs.filter(d => d.ประเภทเอกสาร === type).length + 1;
-  return `${prefix}${buddYear}${month}${String(same).padStart(4,'0')}`;
+  const prefixStr = `${prefix}${buddYear}${month}`;
+  // ใช้เลขลำดับสูงสุดที่มีอยู่ในเดือน/ประเภทนี้ + 1 แทนการนับจากจำนวนแถวที่เหลือ
+  // ป้องกันเลขที่เอกสารซ้ำกันเมื่อมีการลบเอกสารตรงกลางออกไปก่อนหน้า
+  let maxNum = 0;
+  STATE.docs.forEach(d => {
+    const docNo = d.เลขที่เอกสาร || '';
+    if (docNo.startsWith(prefixStr)) {
+      const num = parseInt(docNo.slice(prefixStr.length), 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  });
+  return `${prefixStr}${String(maxNum + 1).padStart(4,'0')}`;
 }
 
 function openNewDocModal() {
@@ -1794,7 +1831,11 @@ function openNewDocModal() {
 
 function onDocTypeChange() {
   const type = document.getElementById('f-type').value;
-  document.getElementById('f-docno').value = generateDocNo(type);
+  // สร้างเลขที่เอกสารใหม่เฉพาะตอนสร้างเอกสารใหม่เท่านั้น
+  // ไม่ควรสร้างเลขใหม่ทับเลขเดิมตอนกำลังแก้ไขเอกสารที่มีอยู่แล้ว
+  if (!STATE.editingDocId) {
+    document.getElementById('f-docno').value = generateDocNo(type);
+  }
   // ใบเสร็จรับเงิน = ไม่มี VAT เสมอ
   const vatWrap = document.getElementById('f-vat-wrap');
   const validWrap = document.getElementById('f-valid-wrap');
@@ -1851,21 +1892,29 @@ function addItemRow(name='', qty='', price='') {
     <td><input type="number" class="item-qty" value="${qty}" min="0" style="text-align:right" oninput="recalcTotals()"></td>
     <td><input type="number" class="item-price" value="${price}" min="0" style="text-align:right" oninput="recalcTotals()"></td>
     <td><input type="number" class="item-total" readonly style="text-align:right;background:var(--gray-100)"></td>
-    <td style="text-align:center"><button class="btn-remove-row" onclick="this.closest('tr').remove();recalcTotals()">×</button></td>`;
+    <td style="text-align:center"><button class="btn-remove-row" onclick="this.closest('tr').remove();renumberItemRows();recalcTotals()">×</button></td>`;
   tbody.appendChild(tr);
   recalcTotals();
+}
+
+function renumberItemRows() {
+  document.querySelectorAll('#items-body tr').forEach((tr, i) => {
+    const numCell = tr.querySelector('td:first-child');
+    if (numCell) numCell.textContent = i + 1;
+  });
 }
 
 function recalcTotals() {
   let sub = 0;
   document.querySelectorAll('#items-body tr').forEach(tr => {
-    const qty   = parseFloat(tr.querySelector('.item-qty')?.value) || 0;
-    const price = parseFloat(tr.querySelector('.item-price')?.value) || 0;
+    // กันค่าติดลบตั้งแต่ตอนคำนวณ (เผื่อผู้ใช้พิมพ์เลขติดลบตรงๆ หรือวางค่าจากที่อื่น)
+    const qty   = Math.max(0, parseFloat(tr.querySelector('.item-qty')?.value) || 0);
+    const price = Math.max(0, parseFloat(tr.querySelector('.item-price')?.value) || 0);
     const tot   = qty * price;
     if (tr.querySelector('.item-total')) tr.querySelector('.item-total').value = tot ? tot.toFixed(2) : '';
     sub += tot;
   });
-  const disc = parseFloat(document.getElementById('f-discount').value) || 0;
+  const disc = Math.max(0, Math.min(sub, parseFloat(document.getElementById('f-discount').value) || 0));
   const afterDisc = sub - disc;
   const type = document.getElementById('f-type').value;
   const hasVat = type !== 'ใบเสร็จรับเงิน' && document.getElementById('f-vat').value === 'มี VAT';
@@ -1885,14 +1934,15 @@ function getFormData() {
   const items = [];
   document.querySelectorAll('#items-body tr').forEach(tr => {
     const name  = tr.querySelector('.item-name')?.value.trim();
-    const qty   = parseFloat(tr.querySelector('.item-qty')?.value) || 0;
-    const price = parseFloat(tr.querySelector('.item-price')?.value) || 0;
+    const qty   = Math.max(0, parseFloat(tr.querySelector('.item-qty')?.value) || 0);
+    const price = Math.max(0, parseFloat(tr.querySelector('.item-price')?.value) || 0);
     if (name) items.push({ name, qty, price, total: qty*price });
   });
   const type = document.getElementById('f-type').value;
   const hasVat = type !== 'ใบเสร็จรับเงิน' && document.getElementById('f-vat').value === 'มี VAT';
-  const disc = parseFloat(document.getElementById('f-discount').value) || 0;
-  const subTotal = items.reduce((a,i) => a + i.total, 0) - disc;
+  const itemsSum = items.reduce((a,i) => a + i.total, 0);
+  const disc = Math.max(0, Math.min(itemsSum, parseFloat(document.getElementById('f-discount').value) || 0));
+  const subTotal = itemsSum - disc;
   const vatAmt = hasVat ? subTotal * 7 / 107 : 0;
   const beforeVat = hasVat ? subTotal - vatAmt : subTotal;
 
@@ -1915,12 +1965,28 @@ function getFormData() {
   };
 }
 
+function validateDocForm(data) {
+  if (!data.cname) return 'กรุณากรอกชื่อลูกค้า';
+  if (!data.items.length) return 'กรุณาเพิ่มรายการสินค้า';
+  if (data.items.some(it => it.qty < 0 || it.price < 0)) return 'จำนวนหรือราคาต่อหน่วยต้องไม่ติดลบ';
+  if (data.discount < 0) return 'ส่วนลดต้องไม่ติดลบ';
+  const itemsTotal = data.items.reduce((a,i) => a + i.total, 0);
+  if (data.discount > itemsTotal) return 'ส่วนลดต้องไม่มากกว่ายอดรวมรายการ';
+  if (data.grand < 0) return 'ยอดรวมสุทธิติดลบ กรุณาตรวจสอบตัวเลขอีกครั้ง';
+  return null;
+}
+
 async function saveDoc() {
   const data = getFormData();
-  if (!data.cname) { showToast('กรุณากรอกชื่อลูกค้า', 'error'); return; }
-  if (!data.items.length) { showToast('กรุณาเพิ่มรายการสินค้า', 'error'); return; }
+  const err = validateDocForm(data);
+  if (err) { showToast(err, 'error'); return; }
   showLoading(true);
   try {
+    // ถ้าเป็นการแก้ไขเอกสารเดิม ให้คงสถานะเดิมไว้ (ยืนยันแล้ว/ชำระแล้ว/ยกเลิก ฯลฯ)
+    // ไม่รีเซ็ตกลับเป็น "รอดำเนินการ" ทุกครั้งที่บันทึก
+    const existingDoc = STATE.editingDocId ? STATE.docs.find(d => d.เลขที่เอกสาร === STATE.editingDocId) : null;
+    const preservedStatus = existingDoc?.สถานะ || 'รอดำเนินการ';
+    data.status = preservedStatus;
     const action = STATE.editingDocId ? 'updateDoc' : 'appendDoc';
     await sheetsPost(action, { data, editId: STATE.editingDocId });
     // Update local state
@@ -1931,7 +1997,7 @@ async function saveDoc() {
       ที่อยู่ลูกค้า1: data.caddr1, ที่อยู่ลูกค้า2: data.caddr2,
       เลขที่เสียภาษีลูกค้า: data.ctaxid, เบอร์โทรศัพท์ลูกค้า: data.ctel,
       อีเมล์ลูกค้า: data.cemail, หมายเหตุ: data.remark, คำค้น: data.keyword,
-      สถานะ: 'รอดำเนินการ',
+      สถานะ: preservedStatus,
       ส่วนลด: data.discount, 'มี VAT ?': data.hasVat ? 'มี VAT' : 'ไม่มี VAT',
     };
     if (STATE.editingDocId) {
@@ -2165,7 +2231,21 @@ function printDoc() {
       .doc-sig-name{font-weight:600;font-size:13px}
       .doc-sig-date{font-size:12px;color:#777;margin-top:4px}
       @media print{@page{size:A4;margin:0}body{margin:0}}
-    </style></head><body>${content}<script>window.onload=()=>window.print()<\/script></body></html>`);
+    </style></head><body>${content}<script>
+      // รอให้ฟอนต์ Sarabun จาก Google Fonts โหลดเสร็จก่อนสั่งพิมพ์ ไม่ให้ window.onload สั่งพิมพ์ทันที
+      // ซึ่งอาจเกิดก่อนฟอนต์โหลดเสร็จ ทำให้เอกสารที่พิมพ์ออกมาใช้ฟอนต์ของระบบแทน
+      function triggerPrint() { window.print(); }
+      window.onload = () => {
+        if (document.fonts && document.fonts.ready) {
+          Promise.race([
+            document.fonts.ready,
+            new Promise(resolve => setTimeout(resolve, 1500)) // กันเหนียวกรณีโหลดฟอนต์ช้าผิดปกติ
+          ]).then(triggerPrint);
+        } else {
+          setTimeout(triggerPrint, 300);
+        }
+      };
+    <\/script></body></html>`);
   win.document.close();
 }
 
@@ -2237,12 +2317,16 @@ async function saveUser() {
   }
   showLoading(true);
   const action = STATE.editingUserId ? 'updateUser' : 'appendUser';
-  // บันทึก user info
-  await sheetsPost(action, { username, name, role, password: pin || '', editId: STATE.editingUserId });
-  // บันทึก PIN แยก
+  // บันทึก user info — ส่ง password เฉพาะตอนที่กรอก PIN ใหม่เท่านั้น
+  // เพื่อป้องกันไม่ให้ PIN เดิมถูกเขียนทับด้วยค่าว่างตอนแก้ไขผู้ใช้โดยไม่เปลี่ยน PIN
+  const userPayload = { username, name, role, editId: STATE.editingUserId };
   if (pin) {
-    const params = new URLSearchParams({ action: 'updatePin', username, pin });
-    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+    // มี PIN แนบมาด้วย → ใช้ POST เพื่อไม่ให้ PIN หลุดไปอยู่ใน URL
+    userPayload.password = pin;
+    await postSecure(action, userPayload);
+    await postSecure('updatePin', { username, pin });
+  } else {
+    await sheetsPost(action, userPayload);
   }
   const row = { username, name, role };
   if (STATE.editingUserId) {
@@ -2275,22 +2359,35 @@ function confirmDeleteUser(username) {
 // ════════════════════════════════════════════════
 // LOGS
 // ════════════════════════════════════════════════
+function goToLogsPage(p) {
+  STATE.logsPage = p;
+  renderLogsTable();
+}
+
 function renderLogsTable() {
   const tbl = document.getElementById('logs-table');
   if (!STATE.logs.length) { tbl.innerHTML = '<div class="empty-state"><p>ไม่มีประวัติการเข้าใช้</p></div>'; return; }
-  const rows = [...STATE.logs].reverse().map(l => `<tr>
+  const reversed = [...STATE.logs].reverse();
+  const totalPages = Math.max(1, Math.ceil(reversed.length / LOGS_PAGE_SIZE));
+  STATE.logsPage = Math.min(Math.max(1, STATE.logsPage || 1), totalPages);
+  const start = (STATE.logsPage - 1) * LOGS_PAGE_SIZE;
+  const pageItems = reversed.slice(start, start + LOGS_PAGE_SIZE);
+  const rows = pageItems.map(l => `<tr>
     <td>${escHtml(l.username||'')}</td>
     <td><span class="badge ${l.action==='LOGIN'?'badge-rt':'badge-qt'}">${l.action||''}</span></td>
     <td>${l.timestamp ? new Date(l.timestamp).toLocaleString('th-TH') : ''}</td>
   </tr>`).join('');
-  tbl.innerHTML = `<table><thead><tr><th>ผู้ใช้</th><th>การดำเนินการ</th><th>เวลา</th></tr></thead><tbody>${rows}</tbody></table>`;
+  tbl.innerHTML = `<table><thead><tr><th>ผู้ใช้</th><th>การดำเนินการ</th><th>เวลา</th></tr></thead><tbody>${rows}</tbody></table>`
+    + buildPagerHTML(STATE.logsPage, totalPages, 'goToLogsPage');
 }
 
 // ════════════════════════════════════════════════
 // SETTINGS / UPLOAD
 // ════════════════════════════════════════════════
+const SETTINGS_TEXT_FIELDS = ['company','taxid','addr1','addr2','tel','email','bank','acc','accname','branch'];
+
 async function loadSettings() {
-  // โหลดข้อมูลบริษัทจาก localStorage ก่อน
+  // โหลดข้อมูลบริษัทจาก localStorage ก่อน (ใช้เป็นค่าตั้งต้น/แคชระหว่างรอโหลดจาก Sheets)
   const saved = localStorage.getItem('vp_settings');
   STATE.settings = saved ? JSON.parse(saved) : {
     company: 'บริษัท วสันต์ปริ้นเตอร์ แอนด์ เซอร์วิส จำกัด',
@@ -2300,19 +2397,28 @@ async function loadSettings() {
     logo: null, sig: null,
   };
   // Apply to form fields
-  const fields = ['company','taxid','addr1','addr2','tel','email','bank','acc','accname','branch'];
-  fields.forEach(f => { const el = document.getElementById('s-'+f); if(el) el.value = STATE.settings[f]||''; });
+  SETTINGS_TEXT_FIELDS.forEach(f => { const el = document.getElementById('s-'+f); if(el) el.value = STATE.settings[f]||''; });
 
-  // โหลดโลโก้และลายเซ็นจาก Google Sheets (ถาวรทุกอุปกรณ์)
+  // โหลดโลโก้ ลายเซ็น และข้อมูลบริษัท จาก Google Sheets (sync ถาวรทุกอุปกรณ์)
+  // เดิมมีแค่โลโก้/ลายเซ็นที่ sync ขึ้น Sheets ส่วนข้อมูลบริษัทอยู่แค่ localStorage
+  // ทำให้แก้ไขจากเครื่องหนึ่งแล้วไม่เห็นการเปลี่ยนแปลงจากอีกเครื่อง — จึง sync ทุกฟิลด์เหมือนกัน
   try {
     const params = new URLSearchParams({ action: 'getSheet', sheet: 'ระบบ' });
     const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await r.json();
     if (data.success && data.data && data.data.length > 1) {
       data.data.slice(1).forEach(row => {
-        if (row[0] === 'logo' && row[1]) { STATE.settings.logo = row[1]; showUploadPreview('logo', row[1]); }
-        if (row[0] === 'sig'  && row[1]) { STATE.settings.sig  = row[1]; showUploadPreview('sig',  row[1]); }
+        const key = row[0], value = row[1];
+        if (!key || !value) return;
+        if (key === 'logo') { STATE.settings.logo = value; showUploadPreview('logo', value); }
+        else if (key === 'sig') { STATE.settings.sig = value; showUploadPreview('sig', value); }
+        else if (SETTINGS_TEXT_FIELDS.includes(key)) {
+          STATE.settings[key] = value;
+          const el = document.getElementById('s-'+key);
+          if (el) el.value = value;
+        }
       });
+      localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
     }
   } catch(e) {
     // fallback: ใช้จาก localStorage
@@ -2323,11 +2429,17 @@ async function loadSettings() {
   setTimeout(() => applySavedSizes(), 100);
 }
 
-function saveSettings() {
-  const fields = ['company','taxid','addr1','addr2','tel','email','bank','acc','accname','branch'];
-  fields.forEach(f => { const el = document.getElementById('s-'+f); if(el) STATE.settings[f] = el.value; });
+async function saveSettings() {
+  SETTINGS_TEXT_FIELDS.forEach(f => { const el = document.getElementById('s-'+f); if(el) STATE.settings[f] = el.value; });
   localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
-  showToast('บันทึกการตั้งค่าแล้ว ✓', 'success');
+  showToast('⏳ กำลังบันทึกและ sync ข้อมูลบริษัท...');
+  try {
+    // sync ข้อมูลบริษัททุกฟิลด์ขึ้น Google Sheets เหมือนโลโก้/ลายเซ็น เพื่อให้ทุกอุปกรณ์เห็นข้อมูลตรงกัน
+    await Promise.all(SETTINGS_TEXT_FIELDS.map(f => saveLogoSigToSheets(f, STATE.settings[f] || '')));
+    showToast('บันทึกการตั้งค่าแล้ว (ซิงค์ทุกอุปกรณ์) ✓', 'success');
+  } catch(e) {
+    showToast('บันทึกในเครื่องนี้แล้ว แต่ซิงค์ไป Google Sheets ไม่สำเร็จ', 'error');
+  }
 }
 
 async function saveLogoSigToSheets(type, value) {
@@ -2343,35 +2455,90 @@ async function saveLogoSigToSheets(type, value) {
   }
 }
 
+// Google Sheets จำกัดความยาวต่อเซลล์ที่ประมาณ 50,000 ตัวอักษร รูปที่แปลงเป็น Base64
+// ตรงๆ (โดยเฉพาะ PNG ความละเอียดสูง) มักเกินขนาดนี้ ทำให้ "อัพโหลดสำเร็จ" ตามหน้าจอ
+// แต่ข้อมูลจริงถูกตัดทอน/บันทึกไม่ครบฝั่ง Sheets — จึงต้องย่อขนาด/คุณภาพก่อนแปลงเป็น Base64 เสมอ
+const IMAGE_CELL_LIMIT = 45000; // เผื่อ margin จากขีดจำกัดจริงของ Google Sheets
+
+function resizeImageFile(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('โหลดรูปไม่สำเร็จ'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        // คงพื้นหลังโปร่งใสไว้เฉพาะไฟล์ PNG/SVG (โลโก้/ลายเซ็นส่วนใหญ่ต้องการพื้นหลังโปร่งใส)
+        // ไฟล์ประเภทอื่น (เช่น JPEG) ไม่รองรับ alpha จึงต้องเติมพื้นขาวกันภาพกลายเป็นสีดำ
+        const keepAlpha = file.type === 'image/png' || file.type === 'image/svg+xml';
+        if (!keepAlpha) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const mime = keepAlpha ? 'image/png' : 'image/jpeg';
+        resolve(canvas.toDataURL(mime, quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ย่อขนาด/คุณภาพซ้ำจนกว่าผลลัพธ์ Base64 จะอยู่ในขีดจำกัดของเซลล์ Google Sheets
+async function prepareImageForUpload(file) {
+  let maxDim = 500, quality = 0.85;
+  let dataUrl = await resizeImageFile(file, maxDim, quality);
+  let attempts = 0;
+  while (dataUrl.length > IMAGE_CELL_LIMIT && attempts < 5) {
+    maxDim = Math.round(maxDim * 0.8);
+    quality = Math.max(0.4, quality - 0.15);
+    dataUrl = await resizeImageFile(file, maxDim, quality);
+    attempts++;
+  }
+  return { dataUrl, tooLarge: dataUrl.length > IMAGE_CELL_LIMIT };
+}
+
+async function processImageUpload(file, type) {
+  const label = type === 'logo' ? 'โลโก้' : 'ลายเซ็น';
+  showToast(`⏳ กำลังย่อขนาดรูป${label}...`);
+  try {
+    const { dataUrl, tooLarge } = await prepareImageForUpload(file);
+    if (tooLarge) {
+      showToast(`รูป${label}มีรายละเอียดสูงเกินไป แม้ย่อขนาดแล้วก็ยังบันทึกลง Google Sheets ไม่ได้ กรุณาใช้ไฟล์ที่เล็กหรือเรียบง่ายกว่านี้`, 'error');
+      return;
+    }
+    STATE.settings[type] = dataUrl;
+    localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
+    showUploadPreview(type, dataUrl);
+    showToast(`⏳ กำลังบันทึก${label}...`);
+    await saveLogoSigToSheets(type, dataUrl);
+    showToast(`อัพโหลด${label}สำเร็จ ✓`, 'success');
+  } catch(e) {
+    showToast(`ประมวลผลรูป${label}ไม่สำเร็จ`, 'error');
+  }
+}
+
 function handleUpload(event, type) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    STATE.settings[type] = e.target.result;
-    localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
-    showUploadPreview(type, e.target.result);
-    showToast(`⏳ กำลังบันทึก${type==='logo'?'โลโก้':'ลายเซ็น'}...`);
-    await saveLogoSigToSheets(type, e.target.result);
-    showToast(`อัพโหลด${type==='logo'?'โลโก้':'ลายเซ็น'}สำเร็จ ✓`, 'success');
-  };
-  reader.readAsDataURL(file);
+  processImageUpload(file, type);
 }
 
 function handleDrop(event, type) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
   if (!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    STATE.settings[type] = e.target.result;
-    localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
-    showUploadPreview(type, e.target.result);
-    showToast(`⏳ กำลังบันทึก${type==='logo'?'โลโก้':'ลายเซ็น'}...`);
-    await saveLogoSigToSheets(type, e.target.result);
-    showToast(`อัพโหลด${type==='logo'?'โลโก้':'ลายเซ็น'}สำเร็จ ✓`, 'success');
-  };
-  reader.readAsDataURL(file);
+  processImageUpload(file, type);
 }
 
 function showUploadPreview(type, src) {
@@ -2435,14 +2602,15 @@ function formatThaiDate(d) {
 
 function numberToThaiWords(amount) {
   const digits = ['','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
-  const positions = ['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
+  const positions = ['','สิบ','ร้อย','พัน','หมื่น','แสน'];
   if (!amount || amount === 0) return 'ศูนย์บาทถ้วน';
   const n = Math.round(amount * 100);
   const baht  = Math.floor(n / 100);
   const satang = n % 100;
-  function convert(num) {
+
+  // แปลงตัวเลข 0 - 999999 เป็นคำอ่านภาษาไทย
+  function convertUnder6(num) {
     if (num === 0) return '';
-    if (num < 10) return digits[num];
     const str = String(num);
     let result = '';
     for (let i = 0; i < str.length; i++) {
@@ -2451,11 +2619,26 @@ function numberToThaiWords(amount) {
       if (d === 0) continue;
       if (pos === 1 && d === 1) result += 'สิบ';
       else if (pos === 1 && d === 2) result += 'ยี่สิบ';
+      // หลักหน่วยที่เป็นเลข 1 และมีหลักอื่นนำหน้า ต้องอ่านว่า "เอ็ด" ไม่ใช่ "หนึ่ง"
+      else if (pos === 0 && d === 1 && str.length > 1) result += 'เอ็ด';
       else result += digits[d] + positions[pos];
     }
     return result;
   }
-  let result = convert(baht) + 'บาท';
+
+  // รองรับตัวเลขเกินหลักแสน โดยแบ่งเป็นช่วงล้าน (ป้องกันข้อความ "undefined" เมื่อยอดเงินเกิน 999,999)
+  function convert(num) {
+    if (num === 0) return '';
+    let result = '';
+    if (num >= 1000000) {
+      result += convert(Math.floor(num / 1000000)) + 'ล้าน';
+      num = num % 1000000;
+    }
+    result += convertUnder6(num);
+    return result;
+  }
+
+  let result = (convert(baht) || 'ศูนย์') + 'บาท';
   if (satang > 0) result += convert(satang) + 'สตางค์';
   else result += 'ถ้วน';
   return result;
@@ -2857,6 +3040,17 @@ function getUniqueCustomerList() {
 }
 
 function loadCustomers() {
+  STATE.customersPage = 1;
+  renderCustomersTable();
+}
+
+function onCustomersFilterChanged() {
+  STATE.customersPage = 1;
+  renderCustomersTable();
+}
+
+function goToCustomersPage(p) {
+  STATE.customersPage = p;
   renderCustomersTable();
 }
 
@@ -2869,9 +3063,18 @@ function renderCustomersTable() {
   document.getElementById('customers-count').textContent = `พบ ${customers.length} ราย`;
   if (!customers.length) {
     document.getElementById('customers-table').innerHTML = '<div class="empty-state"><p>ไม่พบลูกค้า</p></div>';
+    document.getElementById('customers-table')._list = [];
     return;
   }
-  const rows = customers.map((c,i) => `<tr>
+  const totalPages = Math.max(1, Math.ceil(customers.length / CUSTOMERS_PAGE_SIZE));
+  STATE.customersPage = Math.min(Math.max(1, STATE.customersPage || 1), totalPages);
+  const start = (STATE.customersPage - 1) * CUSTOMERS_PAGE_SIZE;
+  const pageItems = customers.slice(start, start + CUSTOMERS_PAGE_SIZE);
+  // ใช้ index จาก array `customers` เต็ม (ไม่ใช่แค่หน้าปัจจุบัน) เพื่อให้ปุ่มแก้ไข/สร้างเอกสาร
+  // อ้างอิงรายการที่ถูกต้องเสมอ ไม่ว่าจะอยู่หน้าไหน
+  const rows = pageItems.map((c, localI) => {
+    const i = start + localI;
+    return `<tr>
     <td>${i+1}</td>
     <td><strong>${escHtml(c.name)}</strong></td>
     <td style="font-size:12px;color:var(--gray-600)">${escHtml(c.addr1)}${c.addr2?' '+escHtml(c.addr2):''}</td>
@@ -2884,13 +3087,14 @@ function renderCustomersTable() {
         + สร้างเอกสาร
       </button>
     </td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
   document.getElementById('customers-table').innerHTML = `
     <table>
       <thead><tr><th>#</th><th>ชื่อ</th><th>ที่อยู่</th><th>เลขภาษี</th><th>เบอร์โทร</th><th>เอกสาร</th><th>การดำเนินการ</th></tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
-  // เก็บ customers list ไว้ใช้
+    </table>` + buildPagerHTML(STATE.customersPage, totalPages, 'goToCustomersPage');
+  // เก็บ customers list ทั้งหมดไว้ใช้ (index ต้องตรงกับที่ใช้สร้างปุ่มด้านบน)
   document.getElementById('customers-table')._list = customers;
 }
 
