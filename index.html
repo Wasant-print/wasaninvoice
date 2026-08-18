@@ -1421,6 +1421,10 @@ let STATE = {
   currentUser: null,
   docs: [], items: [], users: [], logs: [], settings: {},
   drafts: [],
+  // ลูกค้าที่เพิ่มด้วยตนเองผ่านหน้า "รายชื่อลูกค้า" โดยยังไม่เคยมีเอกสารใดๆ ผูกอยู่
+  // เก็บแยกจาก STATE.docs เพราะรายชื่อลูกค้าเดิมถูก "สังเคราะห์" มาจากเอกสารเท่านั้น
+  // ทำให้ลูกค้าที่เพิ่งเพิ่มใหม่ (ยังไม่มีเอกสาร) ไม่มีที่เก็บจริง กด "บันทึก" แล้วหายไปเงียบๆ
+  manualCustomers: [],
   editingDocId: null, editingUserId: null, confirmCallback: null,
   // เลขหน้าปัจจุบันของแต่ละตาราง (สำหรับแบ่งหน้าข้อมูลที่มีจำนวนมาก)
   docsPage: 1, customersPage: 1, logsPage: 1,
@@ -1461,6 +1465,9 @@ window.onload = () => {
 
   // Load settings from localStorage (logo/sig persist here)
   loadSettings();
+  // โหลดลูกค้าที่เพิ่มเอง (ยังไม่มีเอกสารผูกอยู่) จาก localStorage ก่อน — รับประกันว่าไม่หายแม้
+  // backend Apps Script จะยังไม่รองรับ action สำหรับบันทึกลูกค้าแยกต่างหาก
+  loadManualCustomers();
 
   // Check if already logged in this session
   const savedUser = sessionStorage.getItem('vp_user');
@@ -1504,7 +1511,13 @@ async function sheetsPost(action, payload) {
   }
   const params = new URLSearchParams({ action });
   Object.keys(payload).forEach(k => {
-    params.append(k, typeof payload[k] === 'object' ? JSON.stringify(payload[k]) : payload[k]);
+    const v = payload[k];
+    // ข้ามค่า null/undefined ไปเลย แทนที่จะส่งไป — เพราะ `typeof null === 'object'` ทำให้ค่า
+    // null ถูกแปลงเป็นสตริง "null" (ที่ backend มักตีความเป็นค่าจริง/truthy) แทนที่จะหมายถึง "ไม่มีค่า"
+    // บั๊กนี้กระทบ editId เวลาสร้างเอกสาร/ผู้ใช้ใหม่ (editId เป็น null) ทำให้ backend อาจเข้าใจผิดว่า
+    // เป็นการอัปเดตแถวที่มี editId="null" อยู่จริง แทนที่จะเป็นการสร้างแถวใหม่
+    if (v === null || v === undefined) return;
+    params.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
   });
   const r = await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
   return r.json();
@@ -2432,16 +2445,21 @@ async function loadSettings() {
 async function saveSettings() {
   SETTINGS_TEXT_FIELDS.forEach(f => { const el = document.getElementById('s-'+f); if(el) STATE.settings[f] = el.value; });
   localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
-  showToast('⏳ กำลังบันทึกและ sync ข้อมูลบริษัท...');
-  try {
-    // sync ข้อมูลบริษัททุกฟิลด์ขึ้น Google Sheets เหมือนโลโก้/ลายเซ็น เพื่อให้ทุกอุปกรณ์เห็นข้อมูลตรงกัน
-    await Promise.all(SETTINGS_TEXT_FIELDS.map(f => saveLogoSigToSheets(f, STATE.settings[f] || '')));
+  showToast('⏳ กำลังบันทึกและซิงค์ข้อมูลบริษัท...');
+  // sync ข้อมูลบริษัททุกฟิลด์ขึ้น Google Sheets เหมือนโลโก้/ลายเซ็น เพื่อให้ทุกอุปกรณ์เห็นข้อมูลตรงกัน
+  // ตรวจผลลัพธ์จริงของแต่ละฟิลด์ แทนที่จะสมมติว่าสำเร็จเสมอ (saveLogoSigToSheets ไม่ throw แล้ว
+  // แต่คืนค่า true/false ให้ตรวจสอบได้จริง)
+  const results = await Promise.all(SETTINGS_TEXT_FIELDS.map(f => saveLogoSigToSheets(f, STATE.settings[f] || '')));
+  if (results.every(Boolean)) {
     showToast('บันทึกการตั้งค่าแล้ว (ซิงค์ทุกอุปกรณ์) ✓', 'success');
-  } catch(e) {
-    showToast('บันทึกในเครื่องนี้แล้ว แต่ซิงค์ไป Google Sheets ไม่สำเร็จ', 'error');
+  } else {
+    showToast('บันทึกในเครื่องนี้แล้ว แต่ซิงค์ไป Google Sheets บางส่วนไม่สำเร็จ (เครือข่ายผิดพลาด)', 'error');
   }
 }
 
+// คืนค่า true/false ให้ผู้เรียกตรวจสอบได้จริง แทนที่จะกลืน error ไว้เอง
+// (เดิม catch แล้วโชว์ toast ในนี้เลย แต่ผู้เรียกไม่รู้ว่าล้มเหลว จึงโชว์ toast "สำเร็จ" ทับซ้อนไปอีกอัน
+// ทำให้ผู้ใช้เห็นข้อความ "สำเร็จ" ปลอมๆ แม้การซิงค์ขึ้น Google Sheets จะล้มเหลวจริงก็ตาม)
 async function saveLogoSigToSheets(type, value) {
   try {
     const r = await fetch(CONFIG.APPS_SCRIPT_URL, {
@@ -2449,9 +2467,10 @@ async function saveLogoSigToSheets(type, value) {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'saveSetting', key: type, value }),
     });
-    return r.json();
+    const data = await r.json();
+    return !(data && data.success === false);
   } catch(e) {
-    showToast('บันทึกไม่สำเร็จ (เครือข่ายผิดพลาด)', 'error');
+    return false;
   }
 }
 
@@ -2494,8 +2513,23 @@ function resizeImageFile(file, maxDim, quality) {
   });
 }
 
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // ย่อขนาด/คุณภาพซ้ำจนกว่าผลลัพธ์ Base64 จะอยู่ในขีดจำกัดของเซลล์ Google Sheets
 async function prepareImageForUpload(file) {
+  // ไฟล์ SVG เป็นข้อความ (vector) อยู่แล้ว ขนาดเล็กมากโดยธรรมชาติ ถ้าย่อผ่าน canvas จะกลาย
+  // เป็นภาพ raster ทำให้เสียความคมชัดเมื่อขยาย (โลโก้เบลอตอนพิมพ์ขนาดใหญ่) จึงเก็บไว้เป็นเวกเตอร์เดิม
+  if (file.type === 'image/svg+xml') {
+    const dataUrl = await readFileAsDataURL(file);
+    return { dataUrl, tooLarge: dataUrl.length > IMAGE_CELL_LIMIT };
+  }
   let maxDim = 500, quality = 0.85;
   let dataUrl = await resizeImageFile(file, maxDim, quality);
   let attempts = 0;
@@ -2509,6 +2543,10 @@ async function prepareImageForUpload(file) {
 }
 
 async function processImageUpload(file, type) {
+  if (!file.type.startsWith('image/')) {
+    showToast('กรุณาเลือกไฟล์รูปภาพเท่านั้น', 'error');
+    return;
+  }
   const label = type === 'logo' ? 'โลโก้' : 'ลายเซ็น';
   showToast(`⏳ กำลังย่อขนาดรูป${label}...`);
   try {
@@ -2521,8 +2559,14 @@ async function processImageUpload(file, type) {
     localStorage.setItem('vp_settings', JSON.stringify(STATE.settings));
     showUploadPreview(type, dataUrl);
     showToast(`⏳ กำลังบันทึก${label}...`);
-    await saveLogoSigToSheets(type, dataUrl);
-    showToast(`อัพโหลด${label}สำเร็จ ✓`, 'success');
+    // ตรวจผลลัพธ์จริงจาก saveLogoSigToSheets แทนการสมมติว่าสำเร็จเสมอ
+    // (เดิม await เฉยๆ แล้วโชว์ "สำเร็จ" ทันที แม้การซิงค์ขึ้น Sheets จะล้มเหลวก็ตาม)
+    const synced = await saveLogoSigToSheets(type, dataUrl);
+    if (synced) {
+      showToast(`อัพโหลด${label}สำเร็จ ✓`, 'success');
+    } else {
+      showToast(`บันทึก${label}ในเครื่องนี้แล้ว แต่ซิงค์ขึ้น Google Sheets ไม่สำเร็จ (เครือข่ายผิดพลาด) — อุปกรณ์อื่นจะยังไม่เห็น${label}นี้`, 'error');
+    }
   } catch(e) {
     showToast(`ประมวลผลรูป${label}ไม่สำเร็จ`, 'error');
   }
@@ -2537,7 +2581,7 @@ function handleUpload(event, type) {
 function handleDrop(event, type) {
   event.preventDefault();
   const file = event.dataTransfer.files[0];
-  if (!file || !file.type.startsWith('image/')) return;
+  if (!file) return;
   processImageUpload(file, type);
 }
 
@@ -2874,21 +2918,9 @@ function applySavedSizes() {
 // AUTOCOMPLETE ลูกค้า
 // ════════════════════════════════════════════════
 function getUniqueCustomers() {
-  const seen = new Map();
-  STATE.docs.forEach(d => {
-    const name = (d.ชื่อลูกค้า||'').trim();
-    if (name && !seen.has(name)) {
-      seen.set(name, {
-        name,
-        addr1: d.ที่อยู่ลูกค้า1 || '',
-        addr2: d.ที่อยู่ลูกค้า2 || '',
-        taxid: d.เลขที่เสียภาษีลูกค้า || '',
-        tel:   d.เบอร์โทรศัพท์ลูกค้า || '',
-        email: d.อีเมล์ลูกค้า || '',
-      });
-    }
-  });
-  return Array.from(seen.values());
+  // ใช้ฐานข้อมูลลูกค้าชุดเดียวกับหน้า "รายชื่อลูกค้า" (รวมลูกค้าที่เพิ่มเองแต่ยังไม่มีเอกสารด้วย)
+  // เพื่อให้ autocomplete ตอนสร้างเอกสารใหม่ ค้นเจอลูกค้าที่เพิ่งเพิ่มไว้ได้ทันที ไม่ต้องรอมีเอกสารก่อน
+  return getUniqueCustomerList();
 }
 
 function onCustomerSearch(q) {
@@ -3020,8 +3052,58 @@ function doConvertDoc(fromDocNo, toType) {
 // ════════════════════════════════════════════════
 // CUSTOMERS
 // ════════════════════════════════════════════════
+// ────────────────────────────────────────────────────────────────
+// การบันทึกลูกค้าที่เพิ่มเอง (ยังไม่มีเอกสารผูกอยู่)
+// ใช้ localStorage เป็นแหล่งข้อมูลหลักที่รับประกันว่าจะไม่หาย (ทำงานได้ทันทีไม่ต้องพึ่ง backend)
+// และพยายาม sync ขึ้น Google Sheets (ชีตชื่อ 'ลูกค้า') แบบ best-effort ควบคู่ไปด้วย
+// หมายเหตุ: การ sync ขึ้น Sheets ต้องมี action 'saveCustomerRecord' ใน Apps Script backend
+// ถ้า backend ยังไม่มี action นี้ ระบบจะยัง "ใช้งานได้ปกติ" ในเครื่อง/เบราว์เซอร์เดียวกัน
+// เพียงแต่จะไม่ sync ข้ามอุปกรณ์จนกว่าจะเพิ่ม action นี้ฝั่ง backend
+// ────────────────────────────────────────────────────────────────
+const MANUAL_CUSTOMERS_LOCAL_KEY = 'vp_manual_customers';
+
+function loadManualCustomers() {
+  try {
+    const saved = localStorage.getItem(MANUAL_CUSTOMERS_LOCAL_KEY);
+    STATE.manualCustomers = saved ? JSON.parse(saved) : [];
+  } catch(e) {
+    STATE.manualCustomers = [];
+  }
+  // พยายามโหลดจาก Google Sheets เพิ่มเติมแบบ best-effort (เผื่อ backend รองรับแล้วและมีข้อมูล
+  // จากอุปกรณ์อื่น) — ถ้าไม่สำเร็จหรือ sheet ยังไม่มี ก็ไม่เป็นไร ใช้ค่าจาก localStorage ต่อไปได้ปกติ
+  sheetsGet('ลูกค้า').then(rows => {
+    if (Array.isArray(rows) && rows.length) {
+      const remote = rows.map(r => ({
+        name: r.ชื่อ || '', taxid: r.เลขที่เสียภาษี || '',
+        addr1: r.ที่อยู่1 || '', addr2: r.ที่อยู่2 || '',
+        tel: r.เบอร์โทรศัพท์ || '', email: r.อีเมล || '',
+      })).filter(c => c.name);
+      if (remote.length) {
+        STATE.manualCustomers = remote;
+        localStorage.setItem(MANUAL_CUSTOMERS_LOCAL_KEY, JSON.stringify(STATE.manualCustomers));
+        renderCustomersTable();
+      }
+    }
+  }).catch(() => {});
+}
+
+function persistManualCustomersLocally() {
+  localStorage.setItem(MANUAL_CUSTOMERS_LOCAL_KEY, JSON.stringify(STATE.manualCustomers));
+}
+
+// เพิ่ม/แก้ไขลูกค้า 1 รายการในรายการที่บันทึกเอง (upsert โดยใช้ชื่อเดิมเป็นคีย์)
+function upsertManualCustomer(oldName, record) {
+  const idx = STATE.manualCustomers.findIndex(c => c.name === oldName);
+  if (idx > -1) STATE.manualCustomers[idx] = record;
+  else STATE.manualCustomers.push(record);
+  persistManualCustomersLocally();
+  // best-effort sync ขึ้น Sheets — ไม่บล็อกการทำงานถ้า backend ยังไม่รองรับ
+  postSecure('saveCustomerRecord', { customer: record, oldName }).catch(() => {});
+}
+
 function getUniqueCustomerList() {
   const seen = new Map();
+  // 1) ลูกค้าที่มีเอกสารอยู่แล้ว — ข้อมูลนี้ถือเป็นหลักฐานจริงจากเอกสาร
   STATE.docs.forEach(d => {
     const name = (d.ชื่อลูกค้า || '').trim();
     if (name && !seen.has(name)) {
@@ -3033,7 +3115,15 @@ function getUniqueCustomerList() {
         tel:    d.เบอร์โทรศัพท์ลูกค้า || '',
         email:  d.อีเมล์ลูกค้า || '',
         docCount: STATE.docs.filter(x => x.ชื่อลูกค้า === name).length,
+        source: 'docs',
       });
+    }
+  });
+  // 2) ลูกค้าที่เพิ่มเอง (ยังไม่มีเอกสาร) — เติมเฉพาะชื่อที่ยังไม่ซ้ำกับข้อ 1
+  (STATE.manualCustomers || []).forEach(c => {
+    const name = (c.name || '').trim();
+    if (name && !seen.has(name)) {
+      seen.set(name, { ...c, name, docCount: 0, source: 'manual' });
     }
   });
   return Array.from(seen.values()).sort((a,b) => a.name.localeCompare(b.name,'th'));
@@ -3080,7 +3170,7 @@ function renderCustomersTable() {
     <td style="font-size:12px;color:var(--gray-600)">${escHtml(c.addr1)}${c.addr2?' '+escHtml(c.addr2):''}</td>
     <td>${escHtml(c.taxid)}</td>
     <td>${escHtml(c.tel)}</td>
-    <td><span class="badge badge-qt">${c.docCount} ใบ</span></td>
+    <td><span class="badge ${c.docCount ? 'badge-qt' : 'badge-pending'}">${c.docCount ? c.docCount + ' ใบ' : 'ยังไม่มีเอกสาร'}</span></td>
     <td style="white-space:nowrap">
       <button class="btn btn-outline btn-sm" onclick="openCustomerModal(${i})">แก้ไข</button>
       <button class="btn btn-primary btn-sm" style="margin-left:4px" onclick="useCustomerInDoc(${i})">
@@ -3131,24 +3221,33 @@ async function saveCustomer() {
   const email = document.getElementById('cm-email').value.trim();
   showLoading(true);
   try {
-    // อัพเดทใน sheet เอกสาร — ทุกแถวที่ชื่อตรง
-    const oldName = _editingCustomerIdx !== null ?
-      document.getElementById('customers-table')?._list?.[_editingCustomerIdx]?.name : name;
-    const params = new URLSearchParams({
-      action: 'updateCustomer', oldName, name, taxid, addr1, addr2, tel, email
-    });
-    await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
-    // อัพเดท local state
-    STATE.docs.forEach(d => {
-      if (d.ชื่อลูกค้า === oldName) {
-        d.ชื่อลูกค้า = name;
-        d.เลขที่เสียภาษีลูกค้า = taxid;
-        d.ที่อยู่ลูกค้า1 = addr1;
-        d.ที่อยู่ลูกค้า2 = addr2;
-        d.เบอร์โทรศัพท์ลูกค้า = tel;
-        d.อีเมล์ลูกค้า = email;
-      }
-    });
+    const editingEntry = _editingCustomerIdx !== null
+      ? document.getElementById('customers-table')?._list?.[_editingCustomerIdx]
+      : null;
+    const oldName = editingEntry ? editingEntry.name : name;
+
+    if (editingEntry && editingEntry.source === 'docs') {
+      // ลูกค้ามีเอกสารอยู่แล้ว → อัปเดตทุกแถวเอกสารที่ชื่อตรงกัน (พฤติกรรมเดิมที่ใช้งานได้จริง)
+      const params = new URLSearchParams({
+        action: 'updateCustomer', oldName, name, taxid, addr1, addr2, tel, email
+      });
+      await fetch(`${CONFIG.APPS_SCRIPT_URL}?${params.toString()}`);
+      STATE.docs.forEach(d => {
+        if (d.ชื่อลูกค้า === oldName) {
+          d.ชื่อลูกค้า = name;
+          d.เลขที่เสียภาษีลูกค้า = taxid;
+          d.ที่อยู่ลูกค้า1 = addr1;
+          d.ที่อยู่ลูกค้า2 = addr2;
+          d.เบอร์โทรศัพท์ลูกค้า = tel;
+          d.อีเมล์ลูกค้า = email;
+        }
+      });
+    } else {
+      // ลูกค้าใหม่ที่ยังไม่มีเอกสาร หรือลูกค้าที่บันทึกไว้เองมาก่อน (source: 'manual')
+      // เดิมโค้ดส่วนนี้เรียก action 'updateCustomer' ซึ่งหาแถวเอกสารไม่เจอ (เพราะยังไม่มีเอกสาร)
+      // จึงไม่มีอะไรถูกบันทึกเลย ทำให้ "เพิ่มลูกค้าใหม่" ดูเหมือนใช้งานไม่ได้ทั้งตอนบันทึกและตอนค้นหา
+      upsertManualCustomer(oldName, { name, taxid, addr1, addr2, tel, email });
+    }
     renderCustomersTable();
     closeModal('customer-modal');
     showToast('บันทึกข้อมูลลูกค้าแล้ว ✓', 'success');
